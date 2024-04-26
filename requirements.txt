@@ -1,0 +1,8 @@
+astropy
+pymap3d
+numpy
+scipy
+jupyterlab
+matplotlib
+pyatmos
+pykml
