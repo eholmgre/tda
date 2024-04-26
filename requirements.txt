@@ -6,3 +6,4 @@ jupyterlab
 matplotlib
 pyatmos
 pykml
+mypy
