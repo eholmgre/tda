@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 from numpy.typing import NDArray
 
 from ..sensors.sensor import Sensor
@@ -7,7 +7,7 @@ from ..sim_engine import Simulation
 
 
 class SimObject(metaclass=ABCMeta):
-    state: NDArray  # must have dimension no less than 3
+    state: NDArray  # must have dimension no less than 3 (x, y, z)
 
     _num_states: int  # conveinence variable for how many states we have
     _local_clock: float  # clock starting at this object's birth
@@ -34,8 +34,14 @@ class SimObject(metaclass=ABCMeta):
         pass
     
 
+    def advance(self):
+        dt = self._sim._time_delta
+        self._do_advance(dt)
+        self._local_clock += dt
+
+
     @abstractmethod
-    def advance(self, time_quanta: float):
+    def _do_advance(self, time_quanta: float):
         pass
 
 
@@ -45,3 +51,11 @@ class SimObject(metaclass=ABCMeta):
 
         self._state_hist.append((_sim._sim_time, self.state))
         
+
+    @abstractmethod
+    def is_done(self) -> bool:
+        pass
+
+    @abstractmethod
+    def record(self) -> Sequance[Tuple[str, Dict[str, Any]]]:
+        pass
