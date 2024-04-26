@@ -7,7 +7,7 @@ from tda.common.measurement import Measurement
 class Simulation():
     sim_time: float  # current simulation time
     meas_queue: Deque[Sequence[Measurement]]  # queue to hold meas (not sure if I'll use)
-    records: Dict[Dict[str, Any]]
+    records: Dict[str, Dict[str, Any]]
     
     _time_delta: float  # time step to update targets
     _sim_length: float  # length of time to run engagement
@@ -36,7 +36,7 @@ class Simulation():
 
             # update the states of the objects to this time step
             for s in self._simobjects:
-                s.advance(self._time_delta)
+                s.advance()
 
             # let objects act after their update, also check if objects are "done"
             done = list()

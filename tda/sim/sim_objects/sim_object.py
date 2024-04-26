@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 from numpy.typing import NDArray
 
 from ..sensors.sensor import Sensor
-from ..sim_engine import Simulation
+#from ..sim_engine import Simulation
 
 
 class SimObject(metaclass=ABCMeta):
@@ -14,11 +14,11 @@ class SimObject(metaclass=ABCMeta):
     _num_states: int  # conveinence variable for how many states we have
     _local_clock: float  # clock starting at this object's birth
     _payloads: List[Sensor]  # sensors this object may be carrying
-    _sim: Simulation  # refrence to simulation
+#    _sim: Simulation  # refrence to simulation
     _state_hist: List[Tuple[float, NDArray]]  # state hist w/ sim times
 
 
-    def __init__(self, initial_state: NDArray, simulation: Simulation):
+    def __init__(self, initial_state: NDArray, simulation): #: Simulation):
         self._num_states = initial_state.shape[0]
         assert self._num_states >= 3
         self.state = initial_state
