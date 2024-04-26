@@ -8,6 +8,8 @@ from ..sim_engine import Simulation
 
 class SimObject(metaclass=ABCMeta):
     state: NDArray  # must have dimension no less than 3 (x, y, z)
+    object_id: int
+    object_type: str
 
     _num_states: int  # conveinence variable for how many states we have
     _local_clock: float  # clock starting at this object's birth
@@ -29,33 +31,42 @@ class SimObject(metaclass=ABCMeta):
         self._payloads.append(payload)
 
 
-    @abstractmethod
-    def pre_advance(self):
-        pass
-    
-
     def advance(self):
         dt = self._sim._time_delta
         self._do_advance(dt)
         self._local_clock += dt
 
 
-    @abstractmethod
-    def _do_advance(self, time_quanta: float):
-        pass
-
-
     def post_advance(self):
         for p in self._payloads:
-            _sim.meas_queue.append(p.create_measurements())
+            self._sim.meas_queue.append(p.create_measurements())
 
-        self._state_hist.append((_sim._sim_time, self.state))
-        
+        self._state_hist.append((self._sim._sim_time, self.state))
+
+    
+    def get_name(self) -> str:
+        return f"{self.object_type}{self.object_id}"
+
+
+    @abstractmethod
+    def pre_advance(self):
+        "object specific logic to prepare to update to the current state"
+        pass
+    
+
+    @abstractmethod
+    def _do_advance(self, time_quanta: float):
+        "object specific logic to update its state to the current step"
+        pass
+
 
     @abstractmethod
     def is_done(self) -> bool:
+        "whether the object has finished its role in the engagement"
         pass
 
+
     @abstractmethod
-    def record(self) -> Sequance[Tuple[str, Dict[str, Any]]]:
+    def record(self) -> Sequence[Tuple[str, Dict[str, Any]]]:
+        "returns a list holding the record of the object and the records of all of its payloads"
         pass

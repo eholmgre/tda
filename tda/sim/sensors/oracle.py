@@ -1,15 +1,11 @@
+import numpy as np
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal
-from typing import List, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
 
 from .sensor import Sensor
 from ..sim_objects.sim_object import SimObject
 from tda.common.measurement import Measurement
-
-
-class OracleMeasurement(Measurement):
-    def __init__(self, meas_time: float, sensor_id: int, y: NDArray, sensor_pos: NDArray):
-        super().__init__(meas_time, sensor_id, y, sensor_pos)
 
 
 class Oracle(Sensor):
@@ -20,12 +16,13 @@ class Oracle(Sensor):
 
     def __init__(self, sensor_id: int, host: SimObject, R: NDArray):
         super().__init__(sensor_id, host)
+        self.sensor_type = "oracle"
 
         self.R = R
 
 
-    def _observe_targets(self) -> Sequence[Measurement]:
-        measList = list()
+    def _do_create_measurements(self) -> List[Measurement]:
+        frame = list()
         targets = self._host._sim._simobjects
 
         for t in targets:
@@ -33,9 +30,44 @@ class Oracle(Sensor):
             my_pos = self._host.state[:3]
             dispacement = t_pos - my_pos + multivariate_normal.rvs(cov=self.R)
 
-            measList.append(OracleMeasurement(self._host._sim.sim_time,
-                                              self.sensor_id,
-                                              dispacement,
-                                              my_pos))
+            frame.append(Measurement(self._host._sim.sim_time,
+                                     self.sensor_id,
+                                     t.object_id,
+                                     "oracle",
+                                     dispacement,
+                                     my_pos))
+            
+        return frame
 
-        return measList
+
+    def record(self) -> Tuple[str, Dict[str, Any]]:
+        r = dict()
+
+        n = sum([len(f) for f in self._meas_hist])
+
+        r["t"] = np.zeros(n)
+        r["target_id"] = np.zeros(n)
+        r["target_x"] = np.zeros(n)
+        r["target_y"] = np.zeros(n)
+        r["target_z"] = np.zeros(n)
+
+        r["sensor_x"] = np.zeros(n)
+        r["sensor_y"] = np.zeros(n)
+        r["sensor_z"] = np.zeros(n)
+
+        for frame in self._meas_hist:
+            for i, meas in enumerate(frame):
+                r["t"][i] = meas.time
+                r["sensor_id"][i] = meas.sensor_id
+                r["target_id"][i] = meas.target_id
+
+                r["target_x"][i] = meas.y[0]
+                r["target_y"][i] = meas.y[1]
+                r["target_z"][i] = meas.y[2]
+
+                r["sensor_x"][i] = meas.sensor_pos[0]
+                r["sensor_y"][i] = meas.sensor_pos[1]
+                r["sensor_z"][i] = meas.sensor_pos[2]
+
+
+        return (self.get_name(), r)
