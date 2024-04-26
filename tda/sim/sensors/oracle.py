@@ -24,8 +24,9 @@ class Oracle(Sensor):
         self.R = R
 
 
-    def create_measurements(self, targets: Sequence[SimObject]) -> Sequence[Measurement]:
+    def _observe_targets(self) -> Sequence[Measurement]:
         measList = list()
+        targets = self._host._sim._simobjects
 
         for t in targets:
             t_pos = t.state[:3]

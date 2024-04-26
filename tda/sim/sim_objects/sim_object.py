@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import List
+from typing import List, Tuple
 from numpy.typing import NDArray
 
 from ..sensors.sensor import Sensor
@@ -12,7 +12,8 @@ class SimObject(metaclass=ABCMeta):
     _num_states: int  # conveinence variable for how many states we have
     _local_clock: float  # clock starting at this object's birth
     _payloads: List[Sensor]  # sensors this object may be carrying
-    _sim: Simulation
+    _sim: Simulation  # refrence to simulation
+    _state_hist: List[Tuple[float, NDArray]]  # state hist w/ sim times
 
 
     def __init__(self, initial_state: NDArray, simulation: Simulation):
@@ -29,7 +30,7 @@ class SimObject(metaclass=ABCMeta):
 
 
     @abstractmethod
-    def pre_advance(self, ):
+    def pre_advance(self):
         pass
     
 
@@ -38,10 +39,9 @@ class SimObject(metaclass=ABCMeta):
         pass
 
 
-    @abstractmethod
     def post_advance(self):
-        pass
+        for p in self._payloads:
+            _sim.meas_queue.append(p.create_measurements())
 
-    @abstractmethod
-    def _state_transition_function(self, dt:float, t:float=0.0):
-        pass
+        self._state_hist.append((_sim._sim_time, self.state))
+        
