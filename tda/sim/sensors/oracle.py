@@ -14,11 +14,12 @@ class Oracle(Sensor):
     """
     R: NDArray  # measurement cov matrix 3x3 corresponsing to x, y, z meas uncert
 
-    def __init__(self, sensor_id: int, host: SimObject, R: NDArray):
-        super().__init__(sensor_id, host)
+    def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float, R: NDArray):
+        super().__init__(sensor_id, host, revisit_rate)
         self.sensor_type = "oracle"
 
         self.R = R
+        self
 
 
     def _do_create_measurements(self, targets: Sequence[SimObject]) -> List[Measurement]:

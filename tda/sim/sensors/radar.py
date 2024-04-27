@@ -7,7 +7,5 @@ class Radar(Sensor):
 
 
     def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float):
-        super().__init__(sensor_id, host)
+        super().__init__(sensor_id, host, revisit_rate)
 
-        self.revisit_rate = revisit_rate
-        self.last_meas_time = -1.0

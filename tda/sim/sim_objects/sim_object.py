@@ -24,7 +24,7 @@ class SimObject(metaclass=ABCMeta):
         assert self._num_states >= 3
         self.state = initial_state
         self._sim = simulation
-        
+
         self._local_clock = 0.0
         self._payloads = list()
         self._state_hist = list()
@@ -42,7 +42,8 @@ class SimObject(metaclass=ABCMeta):
 
     def post_advance(self):
         for p in self._payloads:
-            self._sim.meas_queue.append(p.create_measurements())
+            if p.has_revisited():
+                self._sim.meas_queue.append(p.create_measurements())
 
         self._state_hist.append((self._sim._sim_time, self.state))
 
