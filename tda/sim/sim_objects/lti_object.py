@@ -35,7 +35,7 @@ class LTIObject(SimObject):
         if self.F is None:
             self.F = self._getF(time_quanta)
 
-        self.state = self.F @ self.state + multivariate_normal.rvs(cov=self.Q)
+        self.state = self.F @ self.state + multivariate_normal.rvs(cov=self._getQ(time_quanta))
 
 
     def is_done(self) -> bool:
@@ -53,6 +53,10 @@ class LTIObject(SimObject):
             F[0, 6] = F[1, 7] = F[2, 8] = (dt ** 2) / 2
 
         return F
+    
+
+    def _getQ(self, dt: float) -> NDArray:
+        return self.Q * dt
 
 
     def record(self) -> Sequence[Tuple[str, Dict[str, Any]]]:

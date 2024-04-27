@@ -11,15 +11,18 @@ class Sensor(metaclass=ABCMeta):
     sensor_type: str
     _revisit_rate: float
     _last_meas_time: float
+    _prob_detect: float
     #_host: SimObject
     _clutter_model: Optional[ClutterModel]
     _meas_hist: List[Sequence[Measurement]]
 
 
-    def __init__(self, sensor_id: int, host, revisit_rate: float): #: SimObject):
+    def __init__(self, sensor_id: int, host, revisit_rate: float, prob_detect: float): #: SimObject):
         self.sensor_id = sensor_id
         self._host = host
         self._revisit_rate = revisit_rate
+        self._prob_detect = prob_detect
+        assert 0.0 <= self._prob_detect <= 1.0
 
         self._last_meas_time = -2 * self._revisit_rate
         self._clutter_model = None

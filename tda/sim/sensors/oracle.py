@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
-from scipy.stats import multivariate_normal
+from scipy.stats import multivariate_normal, uniform
 from typing import Any, Dict, List, Sequence, Tuple
 
 from .sensor import Sensor
@@ -14,12 +14,11 @@ class Oracle(Sensor):
     """
     R: NDArray  # measurement cov matrix 3x3 corresponsing to x, y, z meas uncert
 
-    def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float, R: NDArray):
-        super().__init__(sensor_id, host, revisit_rate)
+    def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float, prob_detect: float, R: NDArray):
+        super().__init__(sensor_id, host, revisit_rate, prob_detect)
         self.sensor_type = "oracle"
 
         self.R = R
-        self
 
 
     def _do_create_measurements(self, targets: Sequence[SimObject]) -> List[Measurement]:
@@ -29,6 +28,10 @@ class Oracle(Sensor):
             # don't measure own platform
             if t == self._host:
                 continue
+
+            if self._prob_detect < 1.0:
+                if uniform.rvs() > self._prob_detect:
+                    continue
 
             t_pos = t.state[:3]
             my_pos = self._host.state[:3]
