@@ -11,16 +11,17 @@ class Simulation():
     
     _time_delta: float  # time step to update targets
     _sim_length: float  # length of time to run engagement
-    _simobjects: List[SimObject]  # objects which will act during the engagement
+    _sim_objects: List[SimObject]  # objects which will act during the engagement
 
 
     def __init__(self, time_delta: float=0.5, sim_length: float=60):
-        self.meas_queue = deque()
-
-        self._sim_time = 0.0
         self._time_delta = time_delta
         self._sim_length = sim_length
-        self._simobjects = list()
+        
+        self.records = dict()
+        self.meas_queue = deque()
+        self._sim_time = 0.0
+        self._sim_objects = list()
 
 
     def setup_sim(self):
@@ -29,18 +30,18 @@ class Simulation():
 
     def run(self) -> Dict[str, Dict[str, Any]]:
         # while we have objects active in the sim and haven't reached the max time
-        while self.sim_time <= self._sim_length and len(self._simobjects):
+        while self._sim_time <= self._sim_length and len(self._sim_objects):
             # give objects a chance to "set up" for this update
-            for s in self._simobjects:
+            for s in self._sim_objects:
                 s.pre_advance()
 
             # update the states of the objects to this time step
-            for s in self._simobjects:
+            for s in self._sim_objects:
                 s.advance()
 
             # let objects act after their update, also check if objects are "done"
             done = list()
-            for s in self._simobjects:
+            for s in self._sim_objects:
                 s.post_advance()
 
                 # we'll clean up in another loop to avoid iterator invalidation
@@ -52,9 +53,11 @@ class Simulation():
                 for sim_id, sim_hist in s.record():
                     self.records[sim_id] = sim_hist
                 
-                self._simobjects.remove(s)
+                self._sim_objects.remove(s)
 
-        for s in self._simobjects:
+            self._sim_time += self._time_delta
+
+        for s in self._sim_objects:
             for sim_id, sim_hist in s.record():
                 self.records[sim_id] = sim_hist
             

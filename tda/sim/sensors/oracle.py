@@ -21,16 +21,19 @@ class Oracle(Sensor):
         self.R = R
 
 
-    def _do_create_measurements(self) -> List[Measurement]:
+    def _do_create_measurements(self, targets: Sequence[SimObject]) -> List[Measurement]:
         frame = list()
-        targets = self._host._sim._simobjects
 
         for t in targets:
+            # don't measure own platform
+            if t == self._host:
+                continue
+
             t_pos = t.state[:3]
             my_pos = self._host.state[:3]
             dispacement = t_pos - my_pos + multivariate_normal.rvs(cov=self.R)
 
-            frame.append(Measurement(self._host._sim.sim_time,
+            frame.append(Measurement(self._host._sim._sim_time,
                                      self.sensor_id,
                                      t.object_id,
                                      "oracle",
@@ -46,6 +49,7 @@ class Oracle(Sensor):
         n = sum([len(f) for f in self._meas_hist])
 
         r["t"] = np.zeros(n)
+        r["sensor_id"] = np.zeros(n)
         r["target_id"] = np.zeros(n)
         r["target_x"] = np.zeros(n)
         r["target_y"] = np.zeros(n)
@@ -55,8 +59,9 @@ class Oracle(Sensor):
         r["sensor_y"] = np.zeros(n)
         r["sensor_z"] = np.zeros(n)
 
+        i = 0
         for frame in self._meas_hist:
-            for i, meas in enumerate(frame):
+            for meas in frame:
                 r["t"][i] = meas.time
                 r["sensor_id"][i] = meas.sensor_id
                 r["target_id"][i] = meas.target_id
@@ -68,6 +73,8 @@ class Oracle(Sensor):
                 r["sensor_x"][i] = meas.sensor_pos[0]
                 r["sensor_y"][i] = meas.sensor_pos[1]
                 r["sensor_z"][i] = meas.sensor_pos[2]
+            
+                i += 1
 
 
         return (self.get_name(), r)

@@ -18,13 +18,16 @@ class SimObject(metaclass=ABCMeta):
     _state_hist: List[Tuple[float, NDArray]]  # state hist w/ sim times
 
 
-    def __init__(self, initial_state: NDArray, simulation): #: Simulation):
+    def __init__(self, object_id: int, initial_state: NDArray, simulation): #: Simulation):
+        self.object_id = object_id
         self._num_states = initial_state.shape[0]
         assert self._num_states >= 3
         self.state = initial_state
+        self._sim = simulation
+        
         self._local_clock = 0.0
         self._payloads = list()
-        self._sim = simulation
+        self._state_hist = list()
 
 
     def add_payload(self, payload: Sensor):

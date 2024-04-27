@@ -1,27 +1,30 @@
-from typing import Any, Dict, Sequence, Tuple
 import numpy as np
 from numpy.typing import NDArray
+from scipy.stats import multivariate_normal
+from typing import Any, Dict, Optional, Sequence, Tuple
+
 
 from .sim_object import SimObject
 from ..sim_engine import Simulation
 
 
 class LTIObject(SimObject):
-    F: NDArray  # DT state transition matrix
-    G: NDArray  # control mapping matrix
-    u: NDArray  # control input vector
     W: NDArray  # DT process noise covariance matrix
-
+    F: Optional[NDArray]  # save the F matrix for speed
 
     def __init__(self,
+                 object_id: int,
                  initial_state: NDArray,
                  simulation: Simulation,
                  W: NDArray):
-        super().__init__(initial_state, simulation)
+        super().__init__(object_id, initial_state, simulation)
         assert self._num_states % 3 == 0 
         
         self.W = W
         assert W.shape[0] == self._num_states
+
+        self.object_type = "lti_object"
+        self.F = None
     
 
     def pre_advance(self):
@@ -29,7 +32,10 @@ class LTIObject(SimObject):
 
 
     def _do_advance(self, time_quanta):
-        self.x = self._getF(time_quanta) @ self.x
+        if self.F is None:
+            self.F = self._getF(time_quanta)
+
+        self.state = self.F @ self.state + multivariate_normal.rvs(cov=self.W)
 
 
     def is_done(self) -> bool:
@@ -37,7 +43,7 @@ class LTIObject(SimObject):
     
    
     def _getF(self, dt: float) -> NDArray:
-        F = dt * np.eye(self._num_states)
+        F = np.eye(self._num_states, dtype=np.float64)
 
         if self._num_states >= 6:
             F[0, 3] = F[1, 4] = F[2, 5] = dt

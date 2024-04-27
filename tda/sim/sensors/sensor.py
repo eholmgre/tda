@@ -18,7 +18,9 @@ class Sensor(metaclass=ABCMeta):
     def __init__(self, sensor_id: int, host): #: SimObject):
         self.sensor_id = sensor_id
         self._host = host
+
         self._clutter_model = None
+        self._meas_hist = list()
 
     
     def add_clutter_model(self, clutter_model: ClutterModel):
@@ -26,7 +28,8 @@ class Sensor(metaclass=ABCMeta):
 
 
     def create_measurements(self) -> Sequence[Measurement]:
-        frame = self._do_create_measurements()
+        targets = self._host._sim._sim_objects
+        frame = self._do_create_measurements(targets)
         if self._clutter_model:
             frame.extend(self._clutter_model.create_clutter_measurements())
         
@@ -40,7 +43,7 @@ class Sensor(metaclass=ABCMeta):
 
 
     @abstractmethod
-    def _do_create_measurements(self) -> List[Measurement]:
+    def _do_create_measurements(self, targets) -> List[Measurement]:
         "sensor specific routine to create the measurements"
         pass
 
