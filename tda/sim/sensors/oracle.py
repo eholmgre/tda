@@ -38,7 +38,7 @@ class Oracle(Sensor):
                                      self.sensor_id,
                                      t.object_id,
                                      "oracle",
-                                     dispacement,
+                                     dispacement + my_pos,
                                      my_pos))
             
         return frame

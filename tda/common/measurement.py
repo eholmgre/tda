@@ -11,7 +11,7 @@ class Measurement():
 
 
     def __init__(self, meas_time: float, sensor_id: int, target_id: int, meas_type: str,
-                 y: NDArray, sensor_pos: NDArray):
+                  y: NDArray, sensor_pos: NDArray):
         self.time = meas_time
         self.sensor_id = sensor_id
         self.target_id = target_id

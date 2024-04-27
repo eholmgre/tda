@@ -22,10 +22,10 @@ class LinearKalman(Filter):
         self.R = R
 
         assert self.F(0).shape[0] == self.F(0).shape[1] \
-            == self.Q(0).shape[0] == self.Q(0).shape[1] == self.H.shape[0] \
+            == self.Q(0).shape[0] == self.Q(0).shape[1] == self.H.shape[1] \
             == self._num_states 
         
-        assert self.R.shape[0] == self.R.shape[1] == self.H.shape[1]
+        assert self.R.shape[0] == self.R.shape[1] == self.H.shape[0]
     
 
     def predict(self, time: float) -> Tuple[NDArray, NDArray]:
