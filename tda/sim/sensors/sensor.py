@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from numpy.typing import NDArray
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .clutter_models.clutter_model import ClutterModel
@@ -12,17 +13,20 @@ class Sensor(metaclass=ABCMeta):
     _revisit_rate: float
     _last_meas_time: float
     _prob_detect: float
+    _field_of_regard: Optional[NDArray]
     #_host: SimObject
     _clutter_model: Optional[ClutterModel]
     _meas_hist: List[Sequence[Measurement]]
 
 
-    def __init__(self, sensor_id: int, host, revisit_rate: float, prob_detect: float): #: SimObject):
+    def __init__(self, sensor_id: int, host, revisit_rate: float,
+                 prob_detect: float=1.0, field_of_regard: Optional[NDArray]=None): #: SimObject):
         self.sensor_id = sensor_id
         self._host = host
         self._revisit_rate = revisit_rate
         self._prob_detect = prob_detect
         assert 0.0 <= self._prob_detect <= 1.0
+        self._field_of_regard = field_of_regard
 
         self._last_meas_time = -2 * self._revisit_rate
         self._clutter_model = None
@@ -35,6 +39,17 @@ class Sensor(metaclass=ABCMeta):
     
     def has_revisited(self):
         return self._host._sim._sim_time - self._last_meas_time >= self._revisit_rate
+
+    
+    def check_fov(self, meas: Measurement) -> bool:
+        if self._field_of_regard is None:
+            return True
+
+        for i in range(meas.y.shape[0]):
+            if not (self._field_of_regard[i, 0] <= meas.y[i] <= self._field_of_regard[i, 1]):
+                return False
+
+        return True
 
 
     def create_measurements(self) -> Sequence[Measurement]:
