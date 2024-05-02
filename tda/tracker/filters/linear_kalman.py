@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
 import scipy.linalg as la
+from scipy.stats import multivariate_normal
 from typing import Any, Callable, Dict, Tuple
 
 from tda.common.measurement import Measurement
@@ -38,13 +39,22 @@ class LinearKalman(Filter):
     
 
     def do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
-        x_pre, P_pre = self.predict(meas.time)
+        x_pred, P_pred = self.predict(meas.time)
 
-        K = P_pre @ self.H.T @ la.inv(self.H @ P_pre @ self.H.T + self.R)
-        self.x_hat = x_pre + K @ (meas.y - self.H @ x_pre)
-        self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pre
+        K = P_pred @ self.H.T @ la.inv(self.H @ P_pred @ self.H.T + self.R)
+        self.x_hat = x_pred + K @ (meas.y - self.H @ x_pred)
+        self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
 
         return self.x_hat, self.P_hat
+    
+
+    def meas_likelihood(self, meas: Measurement) -> float:
+        x_pred, P_pred = self.predict(meas.time)
+
+        innov = meas.y - self.H @ x_pred
+        P_y_pred = self.H @ P_pred @ self.H.T
+
+        return -1 * np.log(multivariate_normal.pdf(innov, cov=P_y_pred))
 
 
     def record(self) -> Dict[str, Any]:

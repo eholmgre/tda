@@ -18,4 +18,6 @@ class JDPAF(Associator):
     
 
     def update_scan(self, scan: Sequence[Measurement]):
-        pass
+        N_tracks = len(self.filters)
+        N_meas = len(scan)
+        N_hyps = N_tracks * (N_meas + N_hyps)

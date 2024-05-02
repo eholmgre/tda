@@ -39,6 +39,10 @@ class Filter(metaclass=ABCMeta):
     def do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         pass
 
+    @abstractmethod
+    def meas_likelihood(self, meas: Measurement) -> float:
+        pass
+
     
     @abstractmethod
     def record(self) -> Dict[str, Any]:
