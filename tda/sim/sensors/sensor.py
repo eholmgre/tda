@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from numpy.typing import NDArray
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from .clutter_models.clutter_model import ClutterModel
+from .clutter_model import ClutterModel
 # from ..sim_objects.sim_object import SimObject
 from tda.common.measurement import Measurement
 
@@ -72,6 +72,10 @@ class Sensor(metaclass=ABCMeta):
     def _do_create_measurements(self, targets) -> List[Measurement]:
         "sensor specific routine to create the measurements"
         pass
+
+
+    def _get_sensor_position(self):
+        return self._host.state[:3]
 
 
     @abstractmethod

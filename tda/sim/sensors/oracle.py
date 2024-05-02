@@ -35,7 +35,7 @@ class Oracle(Sensor):
                     continue
 
             t_pos = t.state[:3]
-            my_pos = self._host.state[:3]
+            my_pos = self._get_sensor_position()
             dispacement = t_pos - my_pos + multivariate_normal.rvs(cov=self.R)
 
             meas = Measurement(self._host._sim._sim_time,
@@ -49,7 +49,7 @@ class Oracle(Sensor):
                 frame.append(meas)
             
         return frame
-
+    
 
     def record(self) -> Tuple[str, Dict[str, Any]]:
         r = dict()
