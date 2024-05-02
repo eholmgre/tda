@@ -1,3 +1,4 @@
+import numpy as np
 from numpy.typing import NDArray
 
 
@@ -18,3 +19,8 @@ class Measurement():
         self.measurement_type = meas_type
         self.y = y
         self.sensor_pos = sensor_pos
+
+    
+    def localize_measurement(self):
+        return Measurement(self.time, self.sensor_id, self.target_id, self.measurement_type,
+                           self.y + self.sensor_pos, np.zeros_like(self.sensor_pos))

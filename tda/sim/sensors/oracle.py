@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.typing import NDArray
 from scipy.stats import multivariate_normal, uniform
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .sensor import Sensor
 from ..sim_objects.sim_object import SimObject
@@ -14,8 +14,9 @@ class Oracle(Sensor):
     """
     R: NDArray  # measurement cov matrix 3x3 corresponsing to x, y, z meas uncert
 
-    def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float, prob_detect: float, R: NDArray):
-        super().__init__(sensor_id, host, revisit_rate, prob_detect)
+    def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float, R: NDArray,
+                 prob_detect: float=1.0, field_of_regard: Optional[NDArray]=None):
+        super().__init__(sensor_id, host, revisit_rate, prob_detect, field_of_regard)
         self.sensor_type = "oracle"
 
         self.R = R
@@ -37,12 +38,15 @@ class Oracle(Sensor):
             my_pos = self._host.state[:3]
             dispacement = t_pos - my_pos + multivariate_normal.rvs(cov=self.R)
 
-            frame.append(Measurement(self._host._sim._sim_time,
-                                     self.sensor_id,
-                                     t.object_id,
-                                     "oracle",
-                                     dispacement + my_pos,
-                                     my_pos))
+            meas = Measurement(self._host._sim._sim_time,
+                               self.sensor_id,
+                               t.object_id,
+                               "oracle",
+                               dispacement,
+                               my_pos)
+
+            if self.check_fov(meas):
+                frame.append(meas)
             
         return frame
 
