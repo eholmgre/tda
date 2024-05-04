@@ -52,9 +52,9 @@ class LinearKalman(Filter):
         x_pred, P_pred = self.predict(meas.time)
 
         innov = meas.y - self.H @ x_pred
-        P_y_pred = self.H @ P_pred @ self.H.T
+        P_innov = self.H @ P_pred @ self.H.T + self.R
 
-        return -1 * np.log(multivariate_normal.pdf(innov, cov=P_y_pred))
+        return -1 * np.log(multivariate_normal.pdf(innov, cov=P_innov))
 
 
     def record(self) -> Dict[str, Any]:
