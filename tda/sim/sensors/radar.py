@@ -36,4 +36,57 @@ class Radar(Sensor):
 
             t_pos = t.state[:3]
             my_pos = self._get_sensor_position()
+            displ = t_pos - my_pos
 
+            rho = la.norm(displ)
+            the = np.arctan2(displ[1], displ[0])
+            psi = np.arccos(displ[2] / rho)
+
+            meas = Measurement(self._host._sim._sim_time,
+                               self.sensor_id,
+                               t.object_id,
+                               "oracle",
+                               np.array([the, psi, rho]),
+                               my_pos)
+
+            if self.check_fov(meas):
+                frame.append(meas)
+
+        return frame
+        
+
+    def record(self) -> Tuple[str, Dict[str, Any]]:
+        r = dict()
+
+        n = sum([len(f) for f in self._meas_hist])
+
+        r["t"] = np.zeros(n)
+        r["sensor_id"] = np.zeros(n)
+        r["target_id"] = np.zeros(n)
+        r["target_az"] = np.zeros(n)
+        r["target_el"] = np.zeros(n)
+        r["target_rng"] = np.zeros(n)
+
+        r["sensor_x"] = np.zeros(n)
+        r["sensor_y"] = np.zeros(n)
+        r["sensor_z"] = np.zeros(n)
+
+        i = 0
+        for frame in self._meas_hist:
+            for meas in frame:
+                r["t"][i] = meas.time
+                r["sensor_id"][i] = meas.sensor_id
+                r["target_id"][i] = meas.target_id
+
+                r["target_az"][i] = meas.y[0]
+                r["target_el"][i] = meas.y[1]
+                r["target_rng"][i] = meas.y[2]
+
+                r["sensor_x"][i] = meas.sensor_pos[0]
+                r["sensor_y"][i] = meas.sensor_pos[1]
+                r["sensor_z"][i] = meas.sensor_pos[2]
+            
+                i += 1
+
+
+        return (self.get_name(), r)

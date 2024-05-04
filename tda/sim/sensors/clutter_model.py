@@ -50,5 +50,5 @@ class PopcornClutter(ClutterModel):
     pass
 
 
-class TimeCorrelatedClutter(ClutterModel)
+class TimeCorrelatedClutter(ClutterModel):
     pass
