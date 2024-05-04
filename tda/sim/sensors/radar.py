@@ -42,11 +42,13 @@ class Radar(Sensor):
             the = np.arctan2(displ[1], displ[0])
             psi = np.arccos(displ[2] / rho)
 
+            y = np.array([the, psi, rho]) + multivariate_normal(cov=self.R)
+
             meas = Measurement(self._host._sim._sim_time,
                                self.sensor_id,
                                t.object_id,
                                "oracle",
-                               np.array([the, psi, rho]),
+                               y,
                                my_pos)
 
             if self.check_fov(meas):
