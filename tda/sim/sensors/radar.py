@@ -42,7 +42,20 @@ class Radar(Sensor):
             the = np.arctan2(displ[1], displ[0])
             psi = np.arccos(displ[2] / rho)
 
-            y = np.array([the, psi, rho]) + multivariate_normal(cov=self.R)
+            y = np.array([the, psi, rho]) + multivariate_normal.rvs(cov=self.R)
+
+            # deal with meas noise around poles
+            while y[0] > np.pi:
+                y[0] -= np.pi
+
+            while y[0] < -np.pi:
+                y[0] += np.pi
+
+            while y[1] > np.pi:
+                y[1] -= np.pi
+
+            while y[1] < -np.pi:
+                y[1] += np.pi
 
             meas = Measurement(self._host._sim._sim_time,
                                self.sensor_id,

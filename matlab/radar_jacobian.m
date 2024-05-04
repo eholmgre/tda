@@ -1,6 +1,6 @@
-syms x y z real
+syms x y z xd yd zd real
 
-X = [x y z];
+X = [x y z xd yd zd];
 
 rho = sqrt(x ^ 2 + y ^ 2 + z ^ 2);
 

@@ -11,8 +11,8 @@ from .filter import Filter
 class ExtendedKalman(Filter):
     f: Callable[[float, NDArray], NDArray]
     F: Callable[[float], NDArray]
-    h: Callable[[float, NDArray], NDArray]
-    H: Callable[[float], NDArray]
+    h: Callable[[NDArray], NDArray]
+    H: Callable[[NDArray], NDArray]
     Q: Callable[[float], NDArray]
     R: NDArray
 
@@ -25,13 +25,13 @@ class ExtendedKalman(Filter):
         self.Q = Q  # process noise covariance
         self.R = R  # measurement noise covariance
 
-        assert self.f(0).shape == self.f(0).shape[1] \
+        assert self.f(0, self.x_hat).shape[0] \
             == self.F(0).shape[0] == self.F(0).shape[1] \
-            == self.Q(0).shape[0] == self.Q(0).shape[1] == self.H(0).shape[1] \
+            == self.Q(0).shape[0] == self.Q(0).shape[1] == self.H(self.x_hat).shape[1] \
             == self._num_states 
         
         assert self.R.shape[0] == self.R.shape[1] \
-            == self.H(0).shape[0] == self.h(0).shape[0]
+            == self.H(self.x_hat).shape[0] == self.h(self.x_hat).shape[0]
         
     
     def predict(self, time: float) -> Tuple[NDArray, NDArray]:
@@ -45,24 +45,24 @@ class ExtendedKalman(Filter):
     
 
     def do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
-        dt = meas.time - self.update_time
-        H = self.H(dt)
-
         x_pred, P_pred = self.predict(meas.time)
+        H = self.H(x_pred)
 
-        inov = meas.y - self.h(dt, self.x_hat)
+        inov = meas.y - self.h(self.x_hat)
         S = H @ P_pred @ H.T + self.R
-        K = P_pred @ H.T la.inv(S)
+        K = P_pred @ H.T @ la.inv(S)
         self.x_hat = x_pred + K @ inov
         self.P_hat = (np.eye(self._num_states) - K @ H) @ P_pred
 
         return self.x_hat, self.P_hat
 
+
     def meas_likelihood(self, meas: Measurement) -> float:
         x_pred, P_pred = self.predict(meas.time)
+        H = self.H(x_pred)
 
         innov = meas.y - self.H @ x_pred
-        P_y_pred = self.H @ P_pred @ self.H.T
+        P_y_pred = self.H @ P_pred @ H.T
 
         return -1 * np.log(multivariate_normal.pdf(innov, cov=P_y_pred))
 
