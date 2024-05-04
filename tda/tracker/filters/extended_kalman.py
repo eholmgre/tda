@@ -25,9 +25,9 @@ class ExtendedKalman(Filter):
         self.Q = Q  # process noise covariance
         self.R = R  # measurement noise covariance
 
-        assert self.f(0, self.x_hat).shape[0] \
-            == self.F(0).shape[0] == self.F(0).shape[1] \
-            == self.Q(0).shape[0] == self.Q(0).shape[1] == self.H(self.x_hat).shape[1] \
+        assert self.f(1.0, self.x_hat).shape[0] \
+            == self.F(1.0).shape[0] == self.F(1.0).shape[1] \
+            == self.Q(1.0).shape[0] == self.Q(1.0).shape[1] == self.H(self.x_hat).shape[1] \
             == self._num_states 
         
         assert self.R.shape[0] == self.R.shape[1] \

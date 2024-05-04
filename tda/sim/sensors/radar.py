@@ -60,7 +60,7 @@ class Radar(Sensor):
             meas = Measurement(self._host._sim._sim_time,
                                self.sensor_id,
                                t.object_id,
-                               "oracle",
+                               self.sensor_type,
                                y,
                                my_pos)
 
