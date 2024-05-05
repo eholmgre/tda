@@ -59,9 +59,10 @@ class ExtendedKalman(Filter):
 
     def meas_likelihood(self, meas: Measurement) -> float:
         x_pred, P_pred = self.predict(meas.time)
+        H = self.H(x_pred)
 
         innov = meas.y - self.h(x_pred)
-        P_innov = self.H @ P_pred @ self.H.T + self.R
+        P_innov = H @ P_pred @ H.T + self.R
 
         return -1 * np.log(multivariate_normal.pdf(innov, cov=P_innov))
 
