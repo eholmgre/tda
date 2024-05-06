@@ -8,33 +8,34 @@ from .deletor.deletor import Deletor
 from .deletor.miss_based import MissBasedDeletor
 from .initeator.initieator import Initeator
 from .initeator.truth import TruthIniteator
-from.track import Track
+from .params import TrackerParam
+from .track import Track
 from tda.common.measurement import Measurement
 
 
 class Tracker():
-    def __init__(self, associator_type: str, initeator_type: str, deletor_type: str):
+    def __init__(self, params: TrackerParam):
         self.tracks: List[Track] = list()
         self.associator: Associator
         self.initeator: Initeator
         self.deletor: Deletor
 
-        if associator_type == "truth":
+        if TrackerParam.associator_type == "truth":
             self.associator = TruthAssociator()
         else:
-            logging.error(f"Unknown associator type: \"{associator_type}\". Exiting.")
+            logging.error(f"Unknown associator type: \"{TrackerParam.associator_type}\". Exiting.")
             sys.exit(-1)
 
-        if initeator_type == "truth":
-            self.initeator = TruthIniteator()
+        if TrackerParam.initeator_type == "truth":
+            self.initeator = TruthIniteator(TrackerParam.filter_factory)
         else:
-            logging.error(f"Unknown initeator type: \"{initeator_type}\". Exiting.")
+            logging.error(f"Unknown initeator type: \"{TrackerParam.initeator_type}\". Exiting.")
             sys.exit(-1)
 
-        if deletor_type == "miss_based":
+        if TrackerParam.deletor_type == "miss_based":
             self.deletor = MissBasedDeletor()
         else:
-            logging.error(f"Unknown deletor type: \"{deletor_type}\". Exiting.")
+            logging.error(f"Unknown deletor type: \"{TrackerParam.deletor_type}\". Exiting.")
             sys.exit(-1)
 
 

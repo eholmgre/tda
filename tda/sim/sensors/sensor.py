@@ -19,11 +19,12 @@ class Sensor(metaclass=ABCMeta):
     _meas_hist: List[Sequence[Measurement]]
 
 
-    def __init__(self, sensor_id: int, host, revisit_rate: float,
+    def __init__(self, sensor_id: int, host, revisit_rate: float, R, NDArray,
                  prob_detect: float=1.0, field_of_regard: Optional[NDArray]=None): #: SimObject):
         self.sensor_id = sensor_id
         self._host = host
         self._revisit_rate = revisit_rate
+        self.R = R
         self._prob_detect = prob_detect
         assert 0.0 <= self._prob_detect <= 1.0
         self._field_of_regard = field_of_regard
@@ -62,6 +63,18 @@ class Sensor(metaclass=ABCMeta):
         self._last_meas_time = self._host._sim._sim_time
 
         return frame
+
+
+    def _create_measurement(self, y: NDArray, target_id: int) -> Measurement:
+        return Measurement(self._host._sim._sim_time,
+                           self.sensor_id,
+                           target_id,
+                           self.sensor_type,
+                           y,
+                           self._get_sensor_position(),
+                           self.R,
+                           self._prob_detect,
+                           self._revisit_rate)
     
 
     def get_name(self) -> str:

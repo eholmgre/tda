@@ -2,9 +2,8 @@ from typing import List, Sequence
 
 from tda.common.measurement import Measurement
 
-from .initieator import Initeator
+from .initieator import Initeator, track_id_ctr
 from ..track import Track
-from .. import track_bookeeper
 
 
 class TruthIniteator(Initeator):
@@ -13,8 +12,8 @@ class TruthIniteator(Initeator):
         
         for m in frame:
             if m.target_id != 0:
-                track_bookeeper.track_id_ctr += 1
-                new_tracks.append(Track(track_bookeeper.track_id_ctr, 
-                                        track_bookeeper.create_linear_filter(m)))
+                track_id_ctr += 1
+                new_tracks.append(Track(track_id_ctr,
+                self.create_filter(m)))
 
         return new_tracks

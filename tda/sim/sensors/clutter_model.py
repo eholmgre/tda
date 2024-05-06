@@ -41,7 +41,7 @@ class PoissonClutter(ClutterModel):
         u = uniform.rvs(size=(n, dims), loc=fov[:, 0], scale=fov[:, 1] - fov[:, 0])
 
         for i in range(n):
-            clutter.append(Measurement(time, sensor_id, 0, "", u[i], sensor_pos))
+            clutter.append(self._parent._create_measurement(u[i], 0))
 
         return clutter
 

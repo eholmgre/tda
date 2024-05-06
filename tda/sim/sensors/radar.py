@@ -13,8 +13,6 @@ class Radar(Sensor):
     """
     Radar - measure the targets azmuth, elevation and range
     """
-    R: NDArray  # measurement cov matrix 3x3 corresponsing to az, el, range meas uncert
-
     def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float, R: NDArray,
                  prob_detect: float=1.0, field_of_regard: Optional[NDArray]=None):
         super().__init__(sensor_id, host, revisit_rate, prob_detect, field_of_regard)
@@ -57,12 +55,7 @@ class Radar(Sensor):
             while y[1] < -np.pi:
                 y[1] += np.pi
 
-            meas = Measurement(self._host._sim._sim_time,
-                               self.sensor_id,
-                               t.object_id,
-                               self.sensor_type,
-                               y,
-                               my_pos)
+            meas = self._create_measurement(y, t.object_id)
 
             if self.check_fov(meas):
                 frame.append(meas)

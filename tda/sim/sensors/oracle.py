@@ -12,7 +12,6 @@ class Oracle(Sensor):
     """
     Oracle - an all seeing sensor that magically measures the targets position
     """
-    R: NDArray  # measurement cov matrix 3x3 corresponsing to x, y, z meas uncert
 
     def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float, R: NDArray,
                  prob_detect: float=1.0, field_of_regard: Optional[NDArray]=None):
@@ -38,12 +37,7 @@ class Oracle(Sensor):
             my_pos = self._get_sensor_position()
             dispacement = t_pos - my_pos + multivariate_normal.rvs(cov=self.R)
 
-            meas = Measurement(self._host._sim._sim_time,
-                               self.sensor_id,
-                               t.object_id,
-                               "oracle",
-                               dispacement,
-                               my_pos)
+            meas = self._create_measurement(dispacement, t.object_id)
 
             if self.check_fov(meas):
                 frame.append(meas)
