@@ -9,14 +9,9 @@ from tda.common.measurement import Measurement
 from .filter import Filter
 
 class LinearKalman(Filter):
-    F: Callable[[float], NDArray]  # state transition matrix (paramatarized by time delta)
-    H: NDArray  # measurement model matrix
-    Q: Callable[[float], NDArray]  # process noise covariance matrix (paramatraized by time)
-    R: NDArray  # measurement noise covariance matrix
-
-
-    def __init__(self, x_hat_0, P_hat_0, F, H, Q, R):
-        super().__init__(x_hat_0, P_hat_0)
+    def __init__(self, x_hat_0:NDArray, P_0: NDArray, F: Callable[[float], NDArray],
+                 H: NDArray, Q: Callable[[float], NDArray], R: NDArray):
+        super().__init__(x_hat_0, P_0)
         self.F = F
         self.H = H
         self.Q = Q
@@ -33,19 +28,19 @@ class LinearKalman(Filter):
         dt = time - self.update_time
         F = self.F(dt)
         x_pre = F @ self.x_hat
-        P_pre = F @ self.P_hat @ F.T + self.Q(dt)
+        P_pre = F @ self.P @ F.T + self.Q(dt)
 
         return x_pre, P_pre
     
 
-    def do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
+    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         x_pred, P_pred = self.predict(meas.time)
 
         K = P_pred @ self.H.T @ la.inv(self.H @ P_pred @ self.H.T + self.R)
         self.x_hat = x_pred + K @ (meas.y - self.H @ x_pred)
         self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
 
-        return self.x_hat, self.P_hat
+        return self.x_hat, self.P
     
 
     def meas_likelihood(self, meas: Measurement) -> float:
@@ -71,5 +66,3 @@ class LinearKalman(Filter):
             r["P_hat"][i] = p
         
         return r
-
-

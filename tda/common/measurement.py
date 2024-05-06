@@ -15,8 +15,3 @@ class Measurement():
         self.sensor_cov = sensor_cov
         self.sensor_pd = sensor_pd
         self.sensor_revisit = sensor_revisit
-
-    
-    def localize_measurement(self):
-        return Measurement(self.time, self.sensor_id, self.target_id, self.measurement_type,
-                           self.y + self.sensor_pos, np.zeros_like(self.sensor_pos))

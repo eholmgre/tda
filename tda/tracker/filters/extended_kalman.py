@@ -4,18 +4,11 @@ import scipy.linalg as la
 from scipy.stats import multivariate_normal
 from typing import Any, Callable, Dict, Tuple
 
+from .filter import Filter
 from tda.common.measurement import Measurement
 
-from .filter import Filter
 
 class ExtendedKalman(Filter):
-    f: Callable[[float, NDArray], NDArray]
-    F: Callable[[float], NDArray]
-    h: Callable[[NDArray], NDArray]
-    H: Callable[[NDArray], NDArray]
-    Q: Callable[[float], NDArray]
-    R: NDArray
-
     def __init__(self, x_hat_0, P_hat_0, f, F, h, H, Q, R):
         super().__init__(x_hat_0, P_hat_0)
         self.f = f  # nonlinear function propagating current state out by dt
@@ -39,12 +32,12 @@ class ExtendedKalman(Filter):
         F = self.F(dt)
 
         x_pre = self.f(dt, self.x_hat)
-        P_pre = F @ self.P_hat @ F.T + self.Q(dt)
+        P_pre = F @ self.P @ F.T + self.Q(dt)
 
         return x_pre, P_pre
     
 
-    def do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
+    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         x_pred, P_pred = self.predict(meas.time)
         H = self.H(x_pred)
 
@@ -54,7 +47,7 @@ class ExtendedKalman(Filter):
         self.x_hat = x_pred + K @ inov
         self.P_hat = (np.eye(self._num_states) - K @ H) @ P_pred
 
-        return self.x_hat, self.P_hat
+        return self.x_hat, self.P
 
 
     def meas_likelihood(self, meas: Measurement) -> float:
@@ -62,9 +55,9 @@ class ExtendedKalman(Filter):
         H = self.H(x_pred)
 
         innov = meas.y - self.h(x_pred)
-        P_innov = H @ P_pred @ H.T + self.R
+        S = H @ P_pred @ H.T + self.R
 
-        return -1 * np.log(multivariate_normal.pdf(innov, cov=P_innov))
+        return -1 * np.log(multivariate_normal.pdf(innov, cov=S))
 
 
     def record(self) -> Dict[str, Any]:

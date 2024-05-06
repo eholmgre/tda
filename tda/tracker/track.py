@@ -8,17 +8,11 @@ from tda.common.measurement import Measurement
 
 
 class Track():
-    track_id: int
-    filter: Filter
-    meas_hist: List[Measurement]
-    state_hist: List[NDArray]
-
-
     def __init__(self, track_id: int, track_filter: Filter):
         self.track_id = track_id
         self.filter = track_filter
-        self.meas_hist = list()
-        self.state_hist = list()
+        self.meas_hist: List[Measurement]= list()
+        self.state_hist: List[Tuple[NDArray, NDArray]]=list()
 
     
     def predict(self, time: float) -> Tuple[NDArray, NDArray]:
@@ -30,11 +24,15 @@ class Track():
     
 
     def update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
-        return self.filter.update(meas)
+        self.meas_hist.append(meas)
+        x_hat, P = self.filter.update(meas)
+        self.state_hist.append((x_hat, P))
+        return x_hat, P
     
 
     def get_state(self) -> NDArray:
         return self.filter.x_hat
 
+
     def get_uncert(self) -> float:
-        return self.filter.P_hat.trace()
+        return self.filter.P.trace()

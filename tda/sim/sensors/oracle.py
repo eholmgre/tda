@@ -14,11 +14,9 @@ class Oracle(Sensor):
     """
 
     def __init__(self, sensor_id: int, host: SimObject, revisit_rate: float, R: NDArray,
-                 prob_detect: float=1.0, field_of_regard: Optional[NDArray]=None):
-        super().__init__(sensor_id, host, revisit_rate, prob_detect, field_of_regard)
-        self.sensor_type = "oracle"
-
-        self.R = R
+                 prob_detect: float=1.0, field_of_regard: Optional[NDArray]=None,
+                 reported_R: Optional[NDArray]=None):
+        super().__init__(sensor_id, "oracle", host, revisit_rate, R, prob_detect, field_of_regard, reported_R)
 
 
     def _do_create_measurements(self, targets: Sequence[SimObject]) -> List[Measurement]:
