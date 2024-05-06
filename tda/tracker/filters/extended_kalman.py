@@ -9,8 +9,10 @@ from tda.common.measurement import Measurement
 
 
 class ExtendedKalman(Filter):
-    def __init__(self, x_hat_0, P_hat_0, f, F, h, H, Q, R):
-        super().__init__(x_hat_0, P_hat_0)
+    def __init__(self, x_hat_0:NDArray, P_0: NDArray, f: Callable[[float, NDArray], NDArray],
+                 F: Callable[[float], NDArray], h: Callable[[NDArray], NDArray], H: Callable[[NDArray], NDArray],
+                 Q: Callable[[float], NDArray], R: NDArray):
+        super().__init__(x_hat_0, P_0)
         self.f = f  # nonlinear function propagating current state out by dt
         self.F = F  # linearization of f paramatarized by dt
         self.h = h  # nonlinear function taking a state vector and returning a meas vector

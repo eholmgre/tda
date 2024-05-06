@@ -1,9 +1,8 @@
 from typing import List, Sequence
 
-from tda.common.measurement import Measurement
-
 from .initieator import Initeator, track_id_ctr
 from ..track import Track
+from tda.common.measurement import Measurement
 
 
 class TruthIniteator(Initeator):

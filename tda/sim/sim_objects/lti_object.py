@@ -9,22 +9,18 @@ from ..sim_engine import Simulation
 
 
 class LTIObject(SimObject):
-    Q: NDArray  # DT process noise covariance matrix
-    F: Optional[NDArray]  # save the F matrix for speed
-
     def __init__(self,
                  object_id: int,
                  initial_state: NDArray,
                  simulation: Simulation,
                  Q: NDArray):
-        super().__init__(object_id, initial_state, simulation)
+        super().__init__(object_id, "lti_object", initial_state, simulation)
         assert self._num_states % 3 == 0 
         
         self.Q = Q
         assert Q.shape[0] == self._num_states
 
-        self.object_type = "lti_object"
-        self.F = None
+        self.F: Optional[NDArray] = None
     
 
     def pre_advance(self):

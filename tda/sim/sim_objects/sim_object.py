@@ -3,31 +3,21 @@ from typing import Any, Dict, List, Sequence, Tuple
 from numpy.typing import NDArray
 
 from ..sensors.sensor import Sensor
-#from ..sim_engine import Simulation
 
 
 class SimObject(metaclass=ABCMeta):
-    state: NDArray  # must have dimension no less than 3 (x, y, z)
-    object_id: int
-    object_type: str
-
-    _num_states: int  # conveinence variable for how many states we have
-    _local_clock: float  # clock starting at this object's birth
-    _payloads: List[Sensor]  # sensors this object may be carrying
-#    _sim: Simulation  # refrence to simulation
-    _state_hist: List[Tuple[float, NDArray]]  # state hist w/ sim times
-
-
-    def __init__(self, object_id: int, initial_state: NDArray, simulation): #: Simulation):
+    def __init__(self, object_id: int, object_type: str,
+                 initial_state: NDArray, simulation: "Simulation") -> None:
         self.object_id = object_id
+        self.object_type = object_type
         self._num_states = initial_state.shape[0]
         assert self._num_states >= 3
         self.state = initial_state
         self._sim = simulation
 
         self._local_clock = 0.0
-        self._payloads = list()
-        self._state_hist = list()
+        self._payloads: List[Sensor] = list()
+        self._state_hist: List[Tuple[float, NDArray]] = list()
 
 
     def add_payload(self, payload: Sensor):

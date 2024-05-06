@@ -1,9 +1,8 @@
 from typing import List, Sequence, Tuple
 
-from tda.common.measurement import Measurement
-from tda.tracker.track import Track
-
 from .associator import Associator, Association
+from ..track import Track
+from tda.common.measurement import Measurement
 
 
 class TruthAssociator(Associator):

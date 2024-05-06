@@ -2,7 +2,6 @@ import numpy as np
 from numpy.typing import NDArray
 from typing import List, Tuple
 
-
 from .filters.filter import Filter
 from tda.common.measurement import Measurement
 

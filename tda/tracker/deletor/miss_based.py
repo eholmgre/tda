@@ -1,8 +1,8 @@
 from typing import List
 
-from tda.tracker.track import Track
-
 from .deletor import Deletor
+from ..track import Track
+
 
 class MissBasedDeletor(Deletor):
     def delete_tracks(self, missed_tracks: List[Track], all_tracks: List[Track], frame_time: float) -> None:

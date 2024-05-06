@@ -6,10 +6,6 @@ from tda.common.measurement import Measurement
 
 
 class Association():
-    track: Track
-    meas: Measurement
-    score: float
-
     def __init__(self, track: Track, meas: Measurement, score: float) -> None:
         self.track = track
         self.meas = meas

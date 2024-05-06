@@ -4,12 +4,12 @@ import scipy.linalg as la
 from scipy.stats import multivariate_normal
 from typing import Any, Callable, Dict, Tuple
 
+from .filter import Filter
 from tda.common.measurement import Measurement
 
-from .filter import Filter
 
 class LinearKalman(Filter):
-    def __init__(self, x_hat_0:NDArray, P_0: NDArray, F: Callable[[float], NDArray],
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, F: Callable[[float], NDArray],
                  H: NDArray, Q: Callable[[float], NDArray], R: NDArray):
         super().__init__(x_hat_0, P_0)
         self.F = F
