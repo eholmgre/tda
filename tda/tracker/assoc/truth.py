@@ -7,11 +7,10 @@ from tda.common.measurement import Measurement
 
 class TruthAssociator(Associator):
     def assoceate(self, frame: Sequence[Measurement], tracks: Sequence[Track]) \
-        -> Tuple[List[Association], List[Track], List[Measurement]]:
+        -> Tuple[List[Track], List[Measurement]]:
 
         associations = list()
         found_meas = list()
-
 
         unassigned_tracks = list()
         unassigned_meas = list()
@@ -31,4 +30,7 @@ class TruthAssociator(Associator):
             if m not in found_meas:
                 unassigned_meas.append(m)
 
-        return associations, unassigned_tracks, unassigned_meas
+        for a in associations:
+            a.track.update(a.meas)
+
+        return unassigned_tracks, unassigned_meas

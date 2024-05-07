@@ -43,10 +43,7 @@ class Tracker():
 
 
     def process_frame(self, frame: Sequence[Measurement]) -> None:
-        associations, missed_associations, missed_meas = self.associator.assoceate(frame, self.tracks)
-
-        for a in associations:
-            a.track.update(a.meas)
+        missed_associations, missed_meas = self.associator.assoceate(frame, self.tracks)
 
         self.tracks.extend(self.initeator.initeate_tracks(missed_meas))
 

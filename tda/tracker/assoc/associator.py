@@ -15,5 +15,5 @@ class Association():
 class Associator(metaclass=ABCMeta):
     @abstractmethod
     def assoceate(self, frame: Sequence[Measurement], tracks: Sequence[Track]) \
-        -> Tuple[List[Association], List[Track], List[Measurement]]:
+        -> Tuple[List[Track], List[Measurement]]:
         pass

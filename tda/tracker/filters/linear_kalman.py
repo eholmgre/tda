@@ -33,23 +33,57 @@ class LinearKalman(Filter):
         return x_pre, P_pre
     
 
+    def predict_meas(self, time: float) -> NDArray:
+        x_pred, _ = self.predict(time)
+
+        return self.H @ x_pred
+    
+
     def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         x_pred, P_pred = self.predict(meas.time)
 
-        K = P_pred @ self.H.T @ la.inv(self.H @ P_pred @ self.H.T + self.R)
-        self.x_hat = x_pred + K @ (meas.y - self.H @ x_pred)
-        self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
+        z_hat = meas.y - self.H @ x_pred
 
-        return self.x_hat, self.P
+        S = self.H @ P_pred @ self.H.T + self.R
+        K = P_pred @ self.H.T @ la.inv(S)
+        x_hat = x_pred + K @ z_hat
+        # self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
+        
+        # Joseph's Form cov update
+        A = np.eye(self._num_states) - K @ self.H
+        P = A @ P_pred @ A.T + K @ self.R @ K.T
+
+        return x_hat, P
+    
+
+    def compute_gain(self, time: float) -> NDArray:
+        _, P_pred = self.predict(time)
+        S = self.H @ P_pred @ self.H.T + self.R
+
+        return  P_pred @ self.H.T @ la.inv(S)
+    
+
+    def compute_S(self, time: float) -> NDArray:
+        _, P_pred = self.predict(time)
+        return self.H @ P_pred @ self.H.T + self.R
     
 
     def meas_likelihood(self, meas: Measurement) -> float:
         x_pred, P_pred = self.predict(meas.time)
 
-        innov = meas.y - self.H @ x_pred
-        P_innov = self.H @ P_pred @ self.H.T + self.R
+        z_hat = meas.y - self.H @ x_pred
+        S = self.H @ P_pred @ self.H.T + self.R
 
-        return -1 * np.log(multivariate_normal.pdf(innov, cov=P_innov))
+        return multivariate_normal.pdf(meas.y, mean=z_hat, cov=S)
+    
+
+    def meas_distance(self, meas: Measurement) -> float:
+        x_pred, P_pred = self.predict(meas.time)
+
+        z_hat = meas.y - self.H @ x_pred
+        S = self.H @ P_pred @ self.H.T + self.R
+
+        return z_hat @ la.inv(S) @ z_hat
 
 
     def record(self) -> Dict[str, Any]:

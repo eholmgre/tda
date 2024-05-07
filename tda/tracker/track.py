@@ -18,8 +18,24 @@ class Track():
         return self.filter.predict(time)
     
 
+    def predict_meas(self, time: float) -> NDArray:
+        return self.filter.predict_meas(time)
+    
+
+    def compute_gain(self, time: float) -> NDArray:
+        return self.filter.compute_gain(time)
+    
+
+    def compute_S(self, time: float) -> NDArray:
+        return self.filter.compute_S(time)
+    
+
     def meas_likelihood(self, meas: Measurement) -> float:
         return self.filter.meas_likelihood(meas)
+    
+
+    def meas_distance(self, meas: Measurement) -> float:
+        return self.filter.meas_distance(meas)
     
 
     def update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
@@ -27,6 +43,10 @@ class Track():
         x_hat, P = self.filter.update(meas)
         self.state_hist.append((x_hat, P))
         return x_hat, P
+    
+
+    def update_external(self, x_hat: NDArray, P: NDArray, time: float) -> None:
+        self.filter.update_external(x_hat, P, time)
     
 
     def get_state(self) -> NDArray:

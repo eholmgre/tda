@@ -20,20 +20,48 @@ class Filter(metaclass=ABCMeta):
         pass
 
 
-    def update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
-        x_hat, P = self._do_update(meas)
-        self.update_time = meas.time
-        self._filter_history.append((self.update_time, x_hat, self.P))
+    @abstractmethod
+    def predict_meas(self, float) -> NDArray:
+        pass
 
-        return x_hat, P
+
+    def update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
+        self.x_hat, self.P = self._do_update(meas)
+        self.update_time = meas.time
+        self._filter_history.append((self.update_time, self.x_hat, self.P))
+
+        return self.x_hat, self.P
+    
+
+    def update_external(self, x_hat: NDArray, P: NDArray, time: float):
+        self.x_hat = x_hat 
+        self.P = P
+        self.update_time = time
+        self._filter_history.append((self.update_time, self.x_hat, self.P))
+    
+
+    @abstractmethod
+    def compute_gain(self, time: float) -> NDArray:
+        pass
+
+
+    @abstractmethod
+    def compute_S(self, time:float) -> NDArray:
+        pass
 
 
     @abstractmethod
     def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         pass
 
+
     @abstractmethod
     def meas_likelihood(self, meas: Measurement) -> float:
+        pass
+
+
+    @abstractmethod
+    def meas_distance(self, meas: Measurement) -> float:
         pass
 
     

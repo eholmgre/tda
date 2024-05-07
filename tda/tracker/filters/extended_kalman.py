@@ -39,6 +39,12 @@ class ExtendedKalman(Filter):
         return x_pre, P_pre
     
 
+    def predict_meas(self, time: float) -> NDArray:
+        x_pred, _ = self.predict(time)
+
+        return self.h(x_pred)
+    
+
     def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         x_pred, P_pred = self.predict(meas.time)
         H = self.H(x_pred)
@@ -47,19 +53,47 @@ class ExtendedKalman(Filter):
         S = H @ P_pred @ H.T + self.R
         K = P_pred @ H.T @ la.inv(S)
         self.x_hat = x_pred + K @ inov
-        self.P_hat = (np.eye(self._num_states) - K @ H) @ P_pred
+        # self.P = (np.eye(self._num_states) - K @ H) @ P_pred
+
+        # Joseph's Form cov update
+        A = np.eye(self._num_states) - K @ H
+        self.P = A @ P_pred @ A.T + K @ self.R @ K.T
 
         return self.x_hat, self.P
+    
 
+    def compute_gain(self, time: float) -> NDArray:
+        x_pred, P_pred = self.predict(time)
+        H = self.H(x_pred)
+        S = H @ P_pred @ H.T + self.R
+
+        return P_pred @ H.T @ la.inv(S)
+    
+
+    def compute_S(self, time: float) -> NDArray:
+        x_pred, P_pred = self.predict(time)
+        H = self.H(x_pred)
+        return H @ P_pred @ H.T + self.R
+    
 
     def meas_likelihood(self, meas: Measurement) -> float:
         x_pred, P_pred = self.predict(meas.time)
-        H = self.H(x_pred)
 
-        innov = meas.y - self.h(x_pred)
+        H = self.H(x_pred)
+        z_hat = meas.y - self.h(x_pred)
         S = H @ P_pred @ H.T + self.R
 
-        return -1 * np.log(multivariate_normal.pdf(innov, cov=S))
+        return multivariate_normal.pdf(meas.y, mean=z_hat, cov=S)
+
+
+    def meas_distance(self, meas: Measurement) -> float:
+        x_pred, P_pred = self.predict(meas.time)
+        H = self.H(x_pred)
+
+        z_hat = meas.y - self.h(x_pred)
+        S = H @ P_pred @ H.T + self.R
+
+        return z_hat @ la.inv(S) @ z_hat
 
 
     def record(self) -> Dict[str, Any]:

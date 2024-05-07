@@ -7,5 +7,5 @@ from tda.common.measurement import Measurement
 
 
 class JDPAF(Associator):
-    def assoceate(self, frame: Sequence[Measurement], tracks: Sequence[Track]) -> Tuple[List[Association], List[Track], List[Measurement]]:
+    def assoceate(self, frame: Sequence[Measurement], tracks: Sequence[Track]) -> Tuple[List[Track], List[Measurement]]:
         pass
