@@ -52,14 +52,13 @@ class ExtendedKalman(Filter):
         inov = meas.y - self.h(x_pred)
         S = H @ P_pred @ H.T + self.R
         K = P_pred @ H.T @ la.inv(S)
-        self.x_hat = x_pred + K @ inov
-        # self.P = (np.eye(self._num_states) - K @ H) @ P_pred
+        x_hat = x_pred + K @ inov
 
         # Joseph's Form cov update
         A = np.eye(self._num_states) - K @ H
-        self.P = A @ P_pred @ A.T + K @ self.R @ K.T
+        P = A @ P_pred @ A.T + K @ self.R @ K.T
 
-        return self.x_hat, self.P
+        return x_hat, P
     
 
     def compute_gain(self, time: float) -> NDArray:
