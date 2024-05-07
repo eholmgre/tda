@@ -12,3 +12,9 @@ class TrackerParam():
     deletor_type: str
 
     filter_factory: Callable[[Measurement], Filter]
+
+    pda_pg: float=0.95
+    pda_cr: float=0.15
+    pda_init_count: int=4
+    pda_initor: str="truth"
+    pda_updator: str="truth"

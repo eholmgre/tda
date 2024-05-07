@@ -2,19 +2,18 @@ import logging
 import numpy as np
 from scipy.stats import chi2
 import sys
-from typing import Callable, List, Optional, Sequence, Tuple
+from typing import Callable, List, Sequence, Tuple
 
-from .associator import Associator, Association
-from ..deletor.deletor import Deletor
+from .associator import Associator
 from ..filters.filter import Filter
-from ..initeator.initieator import Initeator, track_id_ctr
+from ..initeator.initieator import Initeator
 from ..initeator.truth import TruthIniteator
 from ..track import Track
 from .truth import TruthAssociator
 from tda.common.measurement import Measurement
 
 
-class PDAF(Associator, Initeator, Deletor):
+class PDAF(Associator, Initeator):
     def __init__(self, prob_gate: float, clutter_rate: float, init_updates: int, initial_initor: str, initial_associator: str, filter_factory: Callable[[Measurement], Filter ]):
         self.prob_gate = prob_gate
         self.gamma: float = -1.0  # chi sq cv for gating based on prob_gate
@@ -92,8 +91,13 @@ class PDAF(Associator, Initeator, Deletor):
 
         x_hat = x_pred + K @ z_combined
         P_c = P_pred - K @ track.compute_S(pred_time) @ K.T
-        innov_outer = np.outer(z_combined, z_combined)
-        P_tilde = K @ np.sum([beta_i * np.outer(z_hat_i, z_hat_i) - innov_outer for beta_i, z_hat_i in innov_i]) @ K
+                
+        if len(gated_meas):
+            innov_outer = np.outer(z_combined, z_combined)
+            P_tilde = K @ np.sum([beta_i * np.outer(z_hat_i, z_hat_i) - innov_outer for beta_i, z_hat_i in innov_i], axis=0) @ K.T
+        else:
+            P_tilde = np.zeros_like(P_c)
+            
         P = beta_0 * P_pred + (1 - beta_0) * P_c + P_tilde
 
         track.update_external(x_hat, P, pred_time)

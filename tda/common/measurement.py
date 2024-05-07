@@ -15,3 +15,7 @@ class Measurement():
         self.sensor_cov = sensor_cov
         self.sensor_pd = sensor_pd
         self.sensor_revisit = sensor_revisit
+
+
+    def __repr__(self) -> str:
+        return f"Measurement - time: {self.time}, sensor: {self.sensor_id}, target: {self.target_id}"
