@@ -42,11 +42,11 @@ class LinearKalman(Filter):
     def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         x_pred, P_pred = self.predict(meas.time)
 
-        z_hat = meas.y - self.H @ x_pred
+        innov = meas.y - self.H @ x_pred
 
         S = self.H @ P_pred @ self.H.T + self.R
         K = P_pred @ self.H.T @ la.inv(S)
-        x_hat = x_pred + K @ z_hat
+        x_hat = x_pred + K @ innov
         # self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
         
         # Joseph's Form cov update

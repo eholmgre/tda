@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, List, Sequence, Tuple
 from numpy.typing import NDArray
 
+from ..ground_truth import GroundTruth
 from ..sensors.sensor import Sensor
 
 
@@ -18,6 +19,7 @@ class SimObject(metaclass=ABCMeta):
         self._local_clock = 0.0
         self._payloads: List[Sensor] = list()
         self._state_hist: List[Tuple[float, NDArray]] = list()
+        self.ground_truth = GroundTruth()
 
 
     def add_payload(self, payload: Sensor):
@@ -36,6 +38,7 @@ class SimObject(metaclass=ABCMeta):
                 self._sim.meas_queue.append(p.create_measurements())
 
         self._state_hist.append((self._sim._sim_time, self.state))
+        self.ground_truth.update(self.state, self._sim._sim_time)
 
     
     def get_name(self) -> str:

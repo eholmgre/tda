@@ -69,12 +69,14 @@ class PDAF(Associator, Initeator):
                 meas_likeli = track.meas_likelihood(m) * m.sensor_pd / self.clutter_rate
                 gated_meas.append((m, meas_likeli))
 
+        print(f"total gated: {len(gated_meas)}")
+
         # create combined inovation
         z_hat = track.predict_meas(pred_time)
         z_combined = np.zeros_like(z_hat)
 
         total_likeli = sum([likeli for _, likeli in gated_meas])
-        beta_denom = (1 - m.sensor_pd * self.prob_gate + total_likeli)
+        beta_denom = (1 - (m.sensor_pd * self.prob_gate) + total_likeli)
         innov_i = list()
         for m, likeli in gated_meas:
             beta_i = likeli / beta_denom
