@@ -200,7 +200,7 @@ def main(opts):
 
     tracker_params = TrackerParam(associator_type="truth",
                             initeator_type="truth",
-                            deletor_type="miss_based",
+                            deletor_type="truth",
                             filter_factory=lkf_factory)
 
     tracker = Tracker(tracker_params)
