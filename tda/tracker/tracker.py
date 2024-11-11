@@ -65,3 +65,7 @@ class Tracker():
         self.tracks.extend(self.initeator.initeate_tracks(missed_meas))
 
         self.deletor.delete_tracks(missed_associations, self.tracks, frame_time)
+
+
+    def print_tracks(self):
+        print(f" Maintaining: {len(self.tracks)} tracks.")

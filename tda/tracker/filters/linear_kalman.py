@@ -38,20 +38,30 @@ class LinearKalman(Filter):
 
         return self.H @ x_pred
     
+    def _get_R(self, meas):
+        if meas.sensor_cov.trace() > 0:
+            R = meas.sensor_cov
+        else:
+            R = self.R
+
+        return R
+    
 
     def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         x_pred, P_pred = self.predict(meas.time)
 
         innov = meas.y - self.H @ x_pred
 
-        S = self.H @ P_pred @ self.H.T + self.R
+        R = self._get_R(meas)
+
+        S = self.H @ P_pred @ self.H.T + R
         K = P_pred @ self.H.T @ la.inv(S)
         x_hat = x_pred + K @ innov
         # self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
         
         # Joseph's Form cov update
         A = np.eye(self._num_states) - K @ self.H
-        P = A @ P_pred @ A.T + K @ self.R @ K.T
+        P = A @ P_pred @ A.T + K @ R @ K.T
 
         return x_hat, P
     
@@ -71,8 +81,10 @@ class LinearKalman(Filter):
     def meas_likelihood(self, meas: Measurement) -> float:
         x_pred, P_pred = self.predict(meas.time)
 
+        R = self._get_R(meas)
+
         z_hat = meas.y - self.H @ x_pred
-        S = self.H @ P_pred @ self.H.T + self.R
+        S = self.H @ P_pred @ self.H.T + R
 
         return multivariate_normal.pdf(meas.y, mean=z_hat, cov=S)
     
@@ -80,8 +92,10 @@ class LinearKalman(Filter):
     def meas_distance(self, meas: Measurement) -> float:
         x_pred, P_pred = self.predict(meas.time)
 
+        R = self._get_R(meas)
+
         z_hat = meas.y - self.H @ x_pred
-        S = self.H @ P_pred @ self.H.T + self.R
+        S = self.H @ P_pred @ self.H.T + R
 
         return z_hat @ la.inv(S) @ z_hat
 
