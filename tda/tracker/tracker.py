@@ -7,6 +7,7 @@ from .assoc.pdaf import PDAF
 from .assoc.truth import TruthAssociator
 from .deletor.deletor import Deletor
 from .deletor.miss_based import MissBasedDeletor
+from .deletor.time_based import TimeBasedDeletor
 from .deletor.truth_deletor import TruthDeletor
 from .initeator.initieator import Initeator
 from .initeator.truth import TruthIniteator
@@ -49,6 +50,9 @@ class Tracker():
             self.deletor = TruthDeletor()
         elif self.params.deletor_type == "miss_based":
             self.deletor = MissBasedDeletor()
+        elif self.params.deletor_type == "time_based":
+            # todo add time param
+            self.deletor = TimeBasedDeletor()
         else:
             logging.error(f"Unknown deletor type: \"{self.params.deletor_type}\". Exiting.")
             sys.exit(-1)
