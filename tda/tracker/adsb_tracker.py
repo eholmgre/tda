@@ -2,6 +2,7 @@
 
 from tda.common.measurement import Measurement
 
+from tda.tracker.filters.filter import Filter
 from tda.tracker.filters.linear_kalman import LinearKalman
 from tda.tracker.track import Track
 from tda.tracker.tracker import Tracker
@@ -42,6 +43,7 @@ def nac2P(nac):
 
     return np.eye(3) * sigma ** 2
 
+
 def F(dt: float):
     F = np.eye(9, dtype=np.float64)
     F[0, 1] = F[1, 2] = F[3, 4] = F[4, 5] = F[6, 7] = F[7, 8] = dt
@@ -49,22 +51,26 @@ def F(dt: float):
 
     return F
 
+
 def Q(dt: float):
     Q = np.zeros((9, 9))
-    Q[0, 0] = 0.35
-    Q[1, 1] = 0.35
-    Q[2, 2] = 0.35
+    Q[0, 0] = 9.8
+    Q[3, 3] = 9.8
+    Q[6, 6] = 9.8
 
     return dt * Q
+
 
 H = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
               [0, 0, 0, 1, 0, 0, 0, 0, 0],
               [0, 0, 0, 0, 0, 0, 1, 0, 0]])
 
+
 def hinv(y):
     return np.array([y[0], y[1], y[2], 0, 0, 0])
 
-def lkf_factory(meas: Measurement) -> Track:
+
+def lkf_factory(meas: Measurement) -> Filter:
     x0_hat = np.array([meas.y[0], 0, 0, meas.y[1], 0, 0, meas.y[2], 0, 0])
     P0_hat = np.eye(9) * 1e9
 

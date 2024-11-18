@@ -25,12 +25,12 @@ class Filter(metaclass=ABCMeta):
         pass
 
 
-    def update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
-        self.x_hat, self.P = self._do_update(meas)
+    def update(self, meas: Measurement) -> Tuple[NDArray, NDArray, float]:
+        self.x_hat, self.P, nis = self._do_update(meas)
         self.update_time = meas.time
         self._filter_history.append((self.update_time, self.x_hat, self.P))
 
-        return self.x_hat, self.P
+        return self.x_hat, self.P, nis
     
 
     def update_external(self, x_hat: NDArray, P: NDArray, time: float):
@@ -51,7 +51,7 @@ class Filter(metaclass=ABCMeta):
 
 
     @abstractmethod
-    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
+    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray, float]:
         pass
 
 

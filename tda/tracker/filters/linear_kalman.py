@@ -47,15 +47,18 @@ class LinearKalman(Filter):
         return R
     
 
-    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
+    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray, float]:
         x_pred, P_pred = self.predict(meas.time)
 
-        innov = meas.y - self.H @ x_pred
+        y_pred = self.H @ x_pred
+        innov = meas.y - y_pred
 
         R = self._get_R(meas)
 
         S = self.H @ P_pred @ self.H.T + R
-        K = P_pred @ self.H.T @ la.inv(S)
+        S_inv = la.inv(S)
+        nis = innov @ S_inv @ innov
+        K = P_pred @ self.H.T @ S_inv
         x_hat = x_pred + K @ innov
         # self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
         
@@ -63,7 +66,7 @@ class LinearKalman(Filter):
         A = np.eye(self._num_states) - K @ self.H
         P = A @ P_pred @ A.T + K @ R @ K.T
 
-        return x_hat, P
+        return x_hat, P, nis
     
 
     def compute_gain(self, time: float) -> NDArray:

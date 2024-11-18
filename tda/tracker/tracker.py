@@ -73,3 +73,5 @@ class Tracker():
 
     def print_tracks(self):
         print(f" Maintaining: {len(self.tracks)} tracks.")
+        for t in self.tracks:
+            print(f"\t{t}")
