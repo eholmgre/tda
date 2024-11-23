@@ -10,6 +10,7 @@ from tda.tracker.tracker_param import TrackerParam
 
 import numpy as np
 import pymap3d
+import scipy.linalg as la
 
 from abc import ABCMeta
 import argparse
@@ -239,6 +240,27 @@ def main(opts):
 
         tracker.process_frame([message])
         tracker.print_tracks()
+
+        for t1 in tracker.tracks:
+            t1_x, t1_P = t1.predict(30)
+            for t2 in tracker.tracks:
+                # don't care about self collison
+                if t1.track_id == t2.track_id:
+                    continue
+
+                t2_x, t2_P = t2.predict(30)
+
+                delta = t1_x[::3] - t2_x[::3]
+
+                # this is probbably biased
+                P_pool = t1_P[::3,::3] + t2_P[::3,::3]
+
+                P_inv = la.inv(P_pool)
+
+                if np.sum(delta @ P_inv @ delta) < 5000:
+                    print(f"warning! track {t1.track_id} collision possibility with {t2.track_id}")
+
+    tracker.cleanup()
 
 
 if __name__ == "__main__":

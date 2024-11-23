@@ -18,3 +18,6 @@ class TrackerParam():
     pda_init_count: int=4
     pda_initor: str="truth"
     pda_updator: str="truth"
+
+    record_tracks: bool=True
+    record_basename: str="."

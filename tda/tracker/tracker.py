@@ -13,6 +13,7 @@ from .initeator.initieator import Initeator
 from .initeator.truth import TruthIniteator
 from .tracker_param import TrackerParam
 from .track import Track
+from .util.track_writer import TrackWriter
 from tda.common.measurement import Measurement
 
 
@@ -22,6 +23,7 @@ class Tracker():
         self.associator: Associator=None
         self.initeator: Initeator=None
         self.deletor: Deletor=None
+        self.recorder: TrackWriter=None
         self.params = params
 
         self.track_id_ctr = 1
@@ -57,6 +59,8 @@ class Tracker():
             logging.error(f"Unknown deletor type: \"{self.params.deletor_type}\". Exiting.")
             sys.exit(-1)
 
+        self.recorder = TrackWriter(self.params.record_tracks, self.params.record_basename)
+
 
     def process_frame(self, frame: Sequence[Measurement]) -> None:
         if len(frame) == 0:
@@ -69,6 +73,13 @@ class Tracker():
         self.tracks.extend(self.initeator.initeate_tracks(missed_meas))
 
         self.deletor.delete_tracks(missed_associations, self.tracks, frame_time)
+
+
+    def cleanup(self):
+        for t in self.tracks:
+            self.recorder.write_track(t)
+
+        self.tracks.clear()
 
 
     def print_tracks(self):

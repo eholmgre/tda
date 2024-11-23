@@ -2,10 +2,11 @@ from typing import List
 
 from .deletor import Deletor
 from ..track import Track
+from ..util.track_writer import TrackWriter
 
 
 class MissBasedDeletor(Deletor):
-    def delete_tracks(self, missed_tracks: List[Track], all_tracks: List[Track], frame_time: float) -> None:
+    def delete_tracks(self, missed_tracks: List[Track], all_tracks: List[Track], frame_time: float, recorder:TrackWriter=None) -> None:
 
         for t in missed_tracks:
             revisit = t.meas_hist[-1].sensor_revisit
