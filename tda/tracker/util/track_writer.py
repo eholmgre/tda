@@ -52,7 +52,7 @@ class TrackWriter():
         state_t = np.zeros(N_state)
         state_nis = np.zeros(N_state)
 
-        for i, (x, P, t, nis) in enumerate(track.state_hist):
+        for i, (x, P, nis, t) in enumerate(track.state_hist):
             state_x[i] = x
             state_P[i] = P
             state_t[i] = t

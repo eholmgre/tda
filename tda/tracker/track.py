@@ -65,7 +65,7 @@ class Track():
         time = np.zeros_like(state)
         uncert = np.zeros((n, 2))
 
-        for i, (x, P, t, _) in enumerate(self.state_hist):
+        for i, (x, P, nis, t) in enumerate(self.state_hist):
             state[i] = x[x_i]
             time[i] = t
             
