@@ -3,7 +3,7 @@
 from tda.common.measurement import Measurement
 
 from tda.tracker.filters.filter import Filter
-from tda.tracker.filters.linear_kalman import LinearKalman
+from tda.tracker.filters.linear_kalman import LinearKalman6
 from tda.tracker.track import Track
 from tda.tracker.tracker import Tracker
 from tda.tracker.tracker_param import TrackerParam
@@ -45,39 +45,6 @@ def nac2P(nac):
     return np.eye(3) * sigma ** 2
 
 
-def F(dt: float):
-    F = np.eye(9, dtype=np.float64)
-    F[0, 1] = F[1, 2] = F[3, 4] = F[4, 5] = F[6, 7] = F[7, 8] = dt
-    F[0, 2] = F[3, 5] = F[6, 8] = (dt ** 2) / 2
-
-    return F
-
-
-def Q(dt: float):
-    Q = np.zeros((9, 9))
-    Q[0, 0] = 9.8
-    Q[3, 3] = 9.8
-    Q[6, 6] = 9.8
-
-    return dt * Q
-
-
-H = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
-              [0, 0, 0, 1, 0, 0, 0, 0, 0],
-              [0, 0, 0, 0, 0, 0, 1, 0, 0]])
-
-
-def hinv(y):
-    return np.array([y[0], y[1], y[2], 0, 0, 0])
-
-
-def lkf_factory(meas: Measurement) -> Filter:
-    x0_hat = np.array([meas.y[0], 0, 0, meas.y[1], 0, 0, meas.y[2], 0, 0])
-    P0_hat = np.eye(9) * 1e9
-
-    return LinearKalman(x0_hat, P0_hat, F, H, Q, np.zeros((3, 3)))
-
-
 class TargetIDAssigner():
     # singleton - static vars
     _counter = 1
@@ -90,6 +57,11 @@ class TargetIDAssigner():
             TargetIDAssigner._counter += 1
 
         return TargetIDAssigner._target_dict[hex_id]
+    
+    @staticmethod
+    def clear():
+        TargetIDAssigner._target_dict.clear()
+        TargetIDAssigner._counter = 0
 
 
 class ADSBMeasurement(Measurement):
@@ -206,9 +178,12 @@ def get_opts():
 def main(opts):
 
     tracker_params = TrackerParam(associator_type="truth",
-                            initeator_type="truth",
-                            deletor_type="time_based",
-                            filter_factory=lkf_factory)
+                              initeator_type="truth",
+                              deletor_type="time_based",
+                              filter_nstate=6,
+                              filter_startQ=np.array([1e4, 1e9, 1e4, 1e9, 1e4, 1e9]),
+                              record_tracks=False,
+                              record_basename="")
 
     tracker = Tracker(tracker_params)
 
@@ -241,26 +216,27 @@ def main(opts):
         tracker.process_frame([message])
         tracker.print_tracks()
 
-        for t1 in tracker.tracks:
-            t1_x, t1_P = t1.predict(30)
-            for t2 in tracker.tracks:
-                # don't care about self collison
-                if t1.track_id == t2.track_id:
-                    continue
+        # for t1 in tracker.tracks:
+        #     t1_x, t1_P = t1.predict(30)
+        #     for t2 in tracker.tracks:
+        #         # don't care about self collison
+        #         if t1.track_id == t2.track_id:
+        #             continue
 
-                t2_x, t2_P = t2.predict(30)
+        #         t2_x, t2_P = t2.predict(30)
 
-                delta = t1_x[::3] - t2_x[::3]
+        #         delta = t1_x[::3] - t2_x[::3]
 
-                # this is probbably biased
-                P_pool = t1_P[::3,::3] + t2_P[::3,::3]
+        #         # this is probbably biased
+        #         P_pool = t1_P[::3,::3] + t2_P[::3,::3]
 
-                P_inv = la.inv(P_pool)
+        #         P_inv = la.inv(P_pool)
 
-                if np.sum(delta @ P_inv @ delta) < 5000:
-                    print(f"warning! track {t1.track_id} collision possibility with {t2.track_id}")
+        #         if np.sum(delta @ P_inv @ delta) < 5000:
+        #             print(f"warning! track {t1.track_id} collision possibility with {t2.track_id}")
 
     tracker.cleanup()
+    TargetIDAssigner.clear()
 
 
 if __name__ == "__main__":

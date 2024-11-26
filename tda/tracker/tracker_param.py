@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable
+from numpy.typing import NDArray
 
 from .filters.filter import Filter
 from tda.common.measurement import Measurement
@@ -11,7 +11,8 @@ class TrackerParam():
     initeator_type: str
     deletor_type: str
 
-    filter_factory: Callable[[Measurement], Filter]
+    filter_nstate: int
+    filter_startQ: NDArray
 
     pda_pg: float=0.95
     pda_cr: float=0.15

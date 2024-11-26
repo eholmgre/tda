@@ -10,7 +10,7 @@ from .deletor.miss_based import MissBasedDeletor
 from .deletor.time_based import TimeBasedDeletor
 from .deletor.truth_deletor import TruthDeletor
 from .initeator.initieator import Initeator
-from .initeator.truth import TruthIniteator
+from .initeator.truth_initieator import TruthIniteator
 from .tracker_param import TrackerParam
 from .track import Track
 from .util.track_writer import TrackWriter
@@ -30,20 +30,20 @@ class Tracker():
 
         if self.params.associator_type == "truth":
             self.associator = TruthAssociator()
-        elif self.params.associator_type == "pda":
-            pdaf = PDAF(params.pda_pg, params.pda_cr, params.pda_init_count,
-                        params.pda_initor, params.pda_updator,
-                        params.filter_factory)
-            
-            self.associator = pdaf
-            self.initeator = pdaf
+        #elif self.params.associator_type == "pda":
+        #    pdaf = PDAF(params.pda_pg, params.pda_cr, params.pda_init_count,
+        #                params.pda_initor, params.pda_updator,
+        #                params.filter_factory)
+        #    
+        #    self.associator = pdaf
+        #    self.initeator = pdaf
         else:
             logging.error(f"Unknown associator type: \"{self.params.associator_type}\". Exiting.")
             sys.exit(-1)
 
         if not self.initeator:
             if self.params.initeator_type == "truth":
-                self.initeator = TruthIniteator(self.params.filter_factory)
+                self.initeator = TruthIniteator(self.params)
             else:
                 logging.error(f"Unknown initeator type: \"{self.params.initeator_type}\". Exiting.")
                 sys.exit(-1)

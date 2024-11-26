@@ -1,28 +1,42 @@
+import logging
 import numpy as np
 from numpy.typing import NDArray
 import scipy.linalg as la
 from scipy.stats import multivariate_normal
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Dict, Tuple
 
 from .filter import Filter
 from tda.common.measurement import Measurement
 
 
-class LinearKalman(Filter):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray, F: Callable[[float], NDArray],
-                 H: NDArray, Q: Callable[[float], NDArray], R: NDArray):
+class LinearKalman3(Filter):
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray,
+                 pos_Q:float=100, vel_Q:float=10, accel_Q:float=1):
         super().__init__(x_hat_0, P_0)
-        self.F = F
-        self.H = H
-        self.Q = Q
-        self.R = R
 
-        assert self.F(0).shape[0] == self.F(0).shape[1] \
-            == self.Q(0).shape[0] == self.Q(0).shape[1] == self.H.shape[1] \
-            == self._num_states 
+        self.R: NDArray = np.eye(3)
+
+        self.H: NDArray = np.array([[1, 0, 0],
+                                    [0, 1, 0],
+                                    [0, 0, 1]])
         
-        assert self.R.shape[0] == self.R.shape[1] == self.H.shape[0]
+        self.pos_Q = pos_Q
+        self.vel_Q = vel_Q
+        self.accel_Q = accel_Q
+        
     
+    # x = [x, y, z]
+    def F(self, dt: float) -> NDArray:
+        return np.eye(3)
+
+    
+    def Q(self, dt) -> NDArray:
+        Q = np.zeros((3, 3))
+        # position Q
+        Q[0, 0] = Q[1, 1] = Q[2, 2] = (self.pos_Q + self.vel_Q * dt + (self.accel_Q * dt ** 2) / 2) ** 2
+
+        return Q
+
 
     def predict(self, time: float) -> Tuple[NDArray, NDArray]:
         dt = time - self.update_time
@@ -38,16 +52,19 @@ class LinearKalman(Filter):
 
         return self.H @ x_pred
     
-    def _get_R(self, meas):
-        if meas.sensor_cov.trace() > 0:
-            R = meas.sensor_cov
-        else:
-            R = self.R
 
-        return R
+    def _get_R(self, meas) -> NDArray:
+        if meas.sensor_cov.trace() > 0:
+            self.R = meas.sensor_cov
+            return self.R
+        elif self.R.trace() > 0:
+            return self.R
+        else:
+            logging.warning("Measurement has no uncertanty")
+            return np.eye(3)
     
 
-    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray, float]:
+    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         x_pred, P_pred = self.predict(meas.time)
 
         y_pred = self.H @ x_pred
@@ -57,7 +74,7 @@ class LinearKalman(Filter):
 
         S = self.H @ P_pred @ self.H.T + R
         S_inv = la.inv(S)
-        nis = innov @ S_inv @ innov
+        self.update_score = innov @ S_inv @ innov
         K = P_pred @ self.H.T @ S_inv
         x_hat = x_pred + K @ innov
         # self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
@@ -66,7 +83,7 @@ class LinearKalman(Filter):
         A = np.eye(self._num_states) - K @ self.H
         P = A @ P_pred @ A.T + K @ R @ K.T
 
-        return x_hat, P, nis
+        return x_hat, P
     
 
     def compute_gain(self, time: float) -> NDArray:
@@ -101,19 +118,112 @@ class LinearKalman(Filter):
         S = self.H @ P_pred @ self.H.T + R
 
         return z_hat @ la.inv(S) @ z_hat
+    
+    
+    def get_position(self) -> Tuple[NDArray, NDArray]:
+        return self.x_hat, np.sqrt(np.diag(self.P))
+    
+    
+    def get_velocity(self) -> Tuple[NDArray, NDArray]:
+        return np.zeros(3), np.ones(3) * np.inf
+    
+
+    def get_acceleration(self) -> Tuple[NDArray, NDArray]:
+        return np.zeros(3), np.ones(3) * np.inf
 
 
-    def record(self) -> Dict[str, Any]:
-        r = dict()
-        n = len(self._filter_history)
+class LinearKalman6(LinearKalman3):
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray):
+        super().__init__(x_hat_0, P_0)
 
-        r["t"] = np.zeros(n)
-        r["x_hat"] = np.zeros((n, self._num_states))
-        r["P_hat"] = np.zeros((n, self._num_states, self._num_states))
+        self.H: NDArray = np.array([[1, 0, 0, 0, 0, 0],
+                                    [0, 0, 1, 0, 0, 0],
+                                    [0, 0, 0, 0, 1, 0]])
 
-        for i, (t, x, p) in enumerate(self._filter_history):
-            r["t"][i] = t
-            r["x_hat"][i] = x
-            r["P_hat"][i] = p
+    
+    # x = [x, dx, y, dy, z, dz]
+    def F(self, dt: float) -> NDArray:
+        fca = np.array([[1, dt],
+                        [0, 1]])
         
-        return r
+        F = np.zeros((6, 6))
+
+        for i in range(3):
+            a = 2 * i
+            b = 2 * (i + 1)
+
+            F[a : b, a : b] = fca
+
+        return F
+
+    
+    def Q(self, dt) -> NDArray:
+        Q = np.zeros((6, 6))
+        # position Q
+        Q[0, 0] = Q[2, 2] = Q[4, 4] = self.pos_Q ** 2
+        # velocity Q
+        Q[1, 1] = Q[3, 3] = Q[5, 5] = (self.vel_Q + self.accel_Q * dt) ** 2
+
+        return Q
+    
+
+    def get_position(self) -> Tuple[NDArray, NDArray]:
+        return self.x_hat[::2], np.sqrt(np.diag(self.P)[::2])
+    
+    
+    def get_velocity(self) -> Tuple[NDArray, NDArray]:
+        return self.x_hat[1::2], np.sqrt(np.diag(self.P)[1::2])
+    
+
+    def get_acceleration(self) -> Tuple[NDArray, NDArray]:
+        return np.zeros(3), np.ones(3) * np.inf
+
+
+class LinearKalman9(LinearKalman6):
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray):
+        super().__init__(x_hat_0, P_0)
+
+        self.H: NDArray = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
+                                    [0, 0, 0, 1, 0, 0, 0, 0, 0],
+                                    [0, 0, 0, 0, 0, 0, 1, 0, 0]])
+
+
+    # x = [x, dx, ddx, y, dy, ddy, z, dz, ddz]
+    def F(self, dt: float) -> NDArray:
+        fca = np.array([[1, dt, (dt ** 2) / 2],
+                        [0, 1, dt],
+                        [0, 0, 1]])
+        
+        F = np.zeros((9, 9))
+
+        for i in range(3):
+            a = 3 * i
+            b = 3 * (i + 1)
+
+            F[a : b, a : b] = fca
+
+        return F
+
+    
+    def Q(self, dt) -> NDArray:
+        Q = np.zeros((9, 9))
+        # position Q
+        Q[0, 0] = Q[3, 3] = Q[6, 6] = self.pos_Q ** 2
+        # velocity Q
+        Q[1, 1] = Q[4, 4] = Q[7, 7] = self.vel_Q ** 2
+        # accel Q
+        Q[2, 2] = Q[5, 5] = Q[8, 8] =  self.accel_Q ** 2
+
+        return Q
+
+
+    def get_position(self) -> Tuple[NDArray, NDArray]:
+        return self.x_hat[::3], np.sqrt(np.diag(self.P)[::3])
+    
+    
+    def get_velocity(self) -> Tuple[NDArray, NDArray]:
+        return self.x_hat[1::3], np.sqrt(np.diag(self.P)[1::3])
+    
+
+    def get_acceleration(self) -> Tuple[NDArray, NDArray]:
+        return self.x_hat[2::3], np.sqrt(np.diag(self.P)[2::3])

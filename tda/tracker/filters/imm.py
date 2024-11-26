@@ -15,7 +15,6 @@ class IMM(Filter):
 
         self.filters = []
 
-
         # x = [x, xdot, y, ydot, z, zdot]
         F1 = lambda dt: np.array([[1, dt, 0, 0,  0, 0 ],
                                   [0, 1,  0, 0,  0, 0 ],
@@ -29,14 +28,62 @@ class IMM(Filter):
                        [0, 0, 0, 0, 1, 0]])
         
         def Q1(dt):
-            qcv = np.array([])
+            q = 10 # tuning param
+            qcv = q * dt * np.array([[(dt ** 2) / 3, dt / 2],
+                                     [dt / 2,        1]])
             Q = np.zeros(6)
             
+            for i in range(3):
+                c = 2 * i
+                Q[c : c + 2, c : c + 2] = qcv
 
+            return Q
+            
         R = np.zeros(3)
 
-        steady_state_filter = LinearKalman(x_hat_0, P_0, F1, H1, Q1, R)
-    
+        constant_velocity = LinearKalman(x_hat_0, P_0, F1, H1, Q1, R)
+        self.filters.append(constant_velocity)
+
+        # x = [x, xdot, xdotdot, y, ydot, ydotdot, z, zdot, zdotdot]
+        def F2(dt):
+            fca = np.array([[1, dt, (dt ** 2) / 2],
+                            [0, 1,  dt           ],
+                            [0, 0,  1            ]])
+            
+            F = np.zeros(9)
+            for i in range(3):
+                c = 3 * i
+                F[c : c + 3, c : c + 3] = fca
+
+            return F
+        
+        H2 = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 0, 1, 0, 0, 0, 0, 0],
+                       [0, 0, 0, 0, 0, 0, 1, 0, 0]])
+        
+
+        def Q2(dt):
+            q = 10 # tuning param
+            qcv = q * dt * np.array([[(dt ** 2) / 3, dt / 2],
+                                     [dt / 2,        1]])
+            Q = np.zeros(9)
+            
+            for i in range(3):
+                c = 3 * i
+                Q[c : c + 3, c : c + 3] = qcv
+
+            return Q
+        
+        constant_acceleration = LinearKalman(x_hat_0, P_0, F2, H2, Q2, R)
+        self.filters.append(constant_acceleration)
+
+        def omega():
+            pass
+
+        def F3(dt):
+            omega = 0.0 # need to get this from filter
+        
+
 
     def predict(self, time: float) -> Tuple[NDArray, NDArray]:
         dt = time - self.update_time

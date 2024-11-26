@@ -1,12 +1,11 @@
-from tda.common.measurement import Measurement
-from tda.tracker.track import Track
-
 import base64
 import json
-import pickle
-
 import numpy as np
+import pickle
+from typing import Dict, Union
 
+from tda.common.measurement import Measurement
+from tda.tracker.track import Track
 
 class TrackWriter():
     def __init__(self, do_write, basename):
@@ -18,7 +17,7 @@ class TrackWriter():
         if not self._do_write:
             return
         
-        hist_dict = {
+        hist_dict : Dict[str, Union[int, str]] = {
             "name" : track.track_id,
         }
 
@@ -43,25 +42,17 @@ class TrackWriter():
         hist_dict["meas_targ"] = base64.b64encode(pickle.dumps(meas_targ)).decode()
         hist_dict["meas_sensor"] = base64.b64encode(pickle.dumps(meas_sensor)).decode()
 
-        # (x, P, t, nis) 
-        N_state = len(track.state_hist)
-        P_state = track.state_hist[0][0].shape[0]
+        hist_dict["state_x"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.state))).decode()
+        hist_dict["state_P"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.cov))).decode()
+        hist_dict["state_t"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.time))).decode()
+        hist_dict["state_score"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.score))).decode()
 
-        state_x = np.zeros((N_state, P_state))
-        state_P = np.zeros((N_state, P_state, P_state))
-        state_t = np.zeros(N_state)
-        state_nis = np.zeros(N_state)
-
-        for i, (x, P, nis, t) in enumerate(track.state_hist):
-            state_x[i] = x
-            state_P[i] = P
-            state_t[i] = t
-            state_nis[i] = nis
-
-        hist_dict["state_x"] = base64.b64encode(pickle.dumps(state_x)).decode()
-        hist_dict["state_P"] = base64.b64encode(pickle.dumps(state_P)).decode()
-        hist_dict["state_t"] = base64.b64encode(pickle.dumps(state_t)).decode()
-        hist_dict["state_nis"] = base64.b64encode(pickle.dumps(state_nis)).decode()
+        hist_dict["state_pos"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.pos))).decode()
+        hist_dict["state_sig_pos"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.sig_pos))).decode()
+        hist_dict["state_vel"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.vel))).decode()
+        hist_dict["state_sig_vel"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.sig_vel))).decode()
+        hist_dict["state_accel"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.accel))).decode()
+        hist_dict["state_sig_accel"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.sig_accel))).decode()
         
         with open(f"{self._basename}/{track.track_id}.json", "w") as f:
             json.dump(hist_dict, f)

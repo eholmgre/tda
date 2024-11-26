@@ -12,7 +12,8 @@ class Filter(metaclass=ABCMeta):
         self.P = P0
 
         self.update_time = -1.0
-        self._filter_history: List[Tuple[float, NDArray, NDArray]] = list()
+        self.update_score = -1.0
+        self.total_score = -1.0  # todo compute this
 
 
     @abstractmethod
@@ -25,19 +26,17 @@ class Filter(metaclass=ABCMeta):
         pass
 
 
-    def update(self, meas: Measurement) -> Tuple[NDArray, NDArray, float]:
-        self.x_hat, self.P, nis = self._do_update(meas)
+    def update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
+        self.x_hat, self.P = self._do_update(meas)
         self.update_time = meas.time
-        self._filter_history.append((self.update_time, self.x_hat, self.P))
 
-        return self.x_hat, self.P, nis
+        return self.x_hat, self.P, 
     
 
     def update_external(self, x_hat: NDArray, P: NDArray, time: float):
         self.x_hat = x_hat 
         self.P = P
         self.update_time = time
-        self._filter_history.append((self.update_time, self.x_hat, self.P))
     
 
     @abstractmethod
@@ -51,7 +50,7 @@ class Filter(metaclass=ABCMeta):
 
 
     @abstractmethod
-    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray, float]:
+    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
         pass
 
 
@@ -66,5 +65,15 @@ class Filter(metaclass=ABCMeta):
 
     
     @abstractmethod
-    def record(self) -> Dict[str, Any]:
+    def get_position(self) -> Tuple[NDArray, NDArray]:
+        pass
+    
+
+    @abstractmethod   
+    def get_velocity(self) -> Tuple[NDArray, NDArray]:
+        pass
+    
+
+    @abstractmethod
+    def get_acceleration(self) -> Tuple[NDArray, NDArray]:
         pass
