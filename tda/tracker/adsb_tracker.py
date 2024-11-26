@@ -22,17 +22,21 @@ import sys
 
 
 
-def nac2P(nac):
+def nac2R(nac):
     # https://mode-s.org/decode/content/ads-b/7-uncertainty.html
-    sigma = 37040
-    if nac == 9:
-        sigma = 7.5
+    sigma = np.nan
+    if nac == 11:
+        sigma = 3
+    elif nac == 10:
+        sigma = 10
+    elif nac == 9:
+        sigma = 30
     elif nac == 8:
-        sigma = 25
+        sigma = 93
     elif nac == 7:
         sigma = 185
     elif nac == 6:
-        sigma = 370
+        sigma = 556
     elif nac == 5:
         sigma = 926
     elif nac == 4:
@@ -40,7 +44,11 @@ def nac2P(nac):
     elif nac == 3:
         sigma = 3704
     elif nac == 2:
+        sigma = 7408
+    elif nac == 1:
         sigma = 18520
+    else:
+        logging.warning(f"Invalid NACp value encountered: {nac}.")
 
     return np.eye(3) * sigma ** 2
 
@@ -87,7 +95,7 @@ class ADSBMeasurement(Measurement):
         #self.nac_v = float(protodict["nac_v"])
 
         pos_ecef = pymap3d.geodetic2ecef(self.lat, self.lon, self.alt_geom)
-        err_ecef = np.eye(3) * pow(nac2P(self.nac_p), 2)
+        err_ecef = np.eye(3) * pow(nac2R(self.nac_p), 2)
         target_id = TargetIDAssigner.get_id(self.hex_id)
 
         super().__init__(meastime, -1, target_id, "adsb", pos_ecef,
