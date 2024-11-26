@@ -18,7 +18,7 @@ class Initeator(metaclass=ABCMeta):
         self.params = param
 
 
-    def get_filter(self, meas: Measurement) -> Filter:
+    def create_filter(self, meas: Measurement) -> Filter:
         P_0 = np.diag(self.params.filter_startQ)
         
         if self.params.filter_nstate == 3:

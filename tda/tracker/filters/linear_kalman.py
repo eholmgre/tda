@@ -14,7 +14,7 @@ class LinearKalman3(Filter):
                  pos_Q:float=100, vel_Q:float=10, accel_Q:float=1):
         super().__init__(x_hat_0, P_0)
 
-        self.R: NDArray = np.eye(3)
+        self.R: NDArray = np.zeros(3)
 
         self.H: NDArray = np.array([[1, 0, 0],
                                     [0, 1, 0],

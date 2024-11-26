@@ -104,4 +104,4 @@ class Track():
         pos_cov = self.state_hist.sig_pos[-1]
         con95vol = 4 / 3 * np.pi * 2 * pos_cov[0] * pos_cov[1] * pos_cov[2]
         
-        return f"Track {self.track_id} - num hits: {num_hits}, avg score: {avg_score}, last_score: {last_score} , 95% containment vol: {con95vol} m^3"
+        return f"Track {self.track_id} - num hits: {num_hits}, avg score: {avg_score}, last_score: {last_score}, 95% containment vol: {con95vol} m^3"
