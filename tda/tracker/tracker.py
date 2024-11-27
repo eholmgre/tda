@@ -50,9 +50,9 @@ class Tracker():
 
         if self.params.deletor_type == "truth":
             self.deletor = TruthDeletor()
-        elif self.params.deletor_type == "miss_based":
+        elif self.params.deletor_type == "miss":
             self.deletor = MissBasedDeletor()
-        elif self.params.deletor_type == "time_based":
+        elif self.params.deletor_type == "time":
             # todo add time param
             self.deletor = TimeBasedDeletor()
         else:

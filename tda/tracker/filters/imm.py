@@ -4,177 +4,80 @@ import scipy.linalg as la
 from scipy.stats import multivariate_normal
 from typing import Any, Callable, Dict, Tuple
 
-from .filter import Filter,
-from .linear_kalman import LinearKalman
+from .filter import Filter
+from .linear_kalman import LinearKalman6, LinearKalman9
 from tda.common.measurement import Measurement
 
 
+class LinearKalmanManuver(LinearKalman9):
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q: float):
+        super().__init__(x_hat_0, P_0, q)
+
+
+    def omega(self) -> float:
+        return la.norm(self.get_acceleration()[0]) / la.norm(self.get_position()[0])
+    
+
+    def F(self, dt: float) -> NDArray:
+        omega = self.omega()
+        iomega = 1 / omega
+        iomegasq = 1 / omega ** 2
+
+        sinodt = np.sin(omega * dt)
+        cosodt = np.cos(omega * dt)
+
+        return np.array([[1, iomega * sinodt, iomegasq * (1 - cosodt)],
+                         [0,          cosodt, iomega * sinodt        ],
+                         [0, -omega * sinodt, cosodt                 ]])
+
+
 class IMM(Filter):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray):
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q_cv: float, q_ca: float, q_turn: float):
         super().__init__(x_hat_0, P_0)
 
-        self.filters = []
+        self.q_cv = q_cv
+        self.q_ca = q_ca
+        self.q_turn = q_turn
 
-        # x = [x, xdot, y, ydot, z, zdot]
-        F1 = lambda dt: np.array([[1, dt, 0, 0,  0, 0 ],
-                                  [0, 1,  0, 0,  0, 0 ],
-                                  [0, 0,  1, dt, 0, 0 ],
-                                  [0, 0,  0, 1,  0, 0 ],
-                                  [0, 0,  0, 0,  1, dt],
-                                  [0, 0,  0, 0,  0, 1 ]])
-        
-        H1 = np.array([[1, 0, 0, 0, 0, 0],
-                       [0, 0, 1, 0, 0, 0],
-                       [0, 0, 0, 0, 1, 0]])
-        
-        def Q1(dt):
-            q = 10 # tuning param
-            qcv = q * dt * np.array([[(dt ** 2) / 3, dt / 2],
-                                     [dt / 2,        1]])
-            Q = np.zeros(6)
-            
-            for i in range(3):
-                c = 2 * i
-                Q[c : c + 2, c : c + 2] = qcv
+        self.cv_filter = LinearKalman6(x_hat_0, P_0, q_cv)
+        self.ca_filter = LinearKalman9(x_hat_0, P_0, q_ca)
+        self.manuver_filter = LinearKalmanManuver(x_hat_0, P_0, q_turn)
 
-            return Q
-            
-        R = np.zeros(3)
-
-        constant_velocity = LinearKalman(x_hat_0, P_0, F1, H1, Q1, R)
-        self.filters.append(constant_velocity)
-
-        # x = [x, xdot, xdotdot, y, ydot, ydotdot, z, zdot, zdotdot]
-        def F2(dt):
-            fca = np.array([[1, dt, (dt ** 2) / 2],
-                            [0, 1,  dt           ],
-                            [0, 0,  1            ]])
-            
-            F = np.zeros(9)
-            for i in range(3):
-                c = 3 * i
-                F[c : c + 3, c : c + 3] = fca
-
-            return F
-        
-        H2 = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
-                       [0, 0, 0, 1, 0, 0, 0, 0, 0],
-                       [0, 0, 0, 0, 0, 0, 1, 0, 0]])
-        
-
-        def Q2(dt):
-            q = 10 # tuning param
-            qcv = q * dt * np.array([[(dt ** 2) / 3, dt / 2],
-                                     [dt / 2,        1]])
-            Q = np.zeros(9)
-            
-            for i in range(3):
-                c = 3 * i
-                Q[c : c + 3, c : c + 3] = qcv
-
-            return Q
-        
-        constant_acceleration = LinearKalman(x_hat_0, P_0, F2, H2, Q2, R)
-        self.filters.append(constant_acceleration)
-
-        def omega():
-            pass
-
-        def F3(dt):
-            omega = 0.0 # need to get this from filter
+        self.mu = np.array([0.7, 0.2, 0.1])
+        self.Pi = np.array([[0.90, 0.08, 0.02],
+                            [0.15, 0.70, 0.15],
+                            [0.04, 0.16, 0.80]])
         
 
 
     def predict(self, time: float) -> Tuple[NDArray, NDArray]:
-        dt = time - self.update_time
-        F = self.F(dt)
-        x_pre = F @ self.x_hat
-        P_pre = F @ self.P @ F.T + self.Q(dt)
-
-        return x_pre, P_pre
+        pass
     
 
     def predict_meas(self, time: float) -> NDArray:
-        x_pred, _ = self.predict(time)
-
-        return self.H @ x_pred
+        pass
     
     def _get_R(self, meas):
-        if meas.sensor_cov.trace() > 0:
-            R = meas.sensor_cov
-        else:
-            R = self.R
-
-        return R
+        pass
     
 
-    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray, float]:
-        x_pred, P_pred = self.predict(meas.time)
-
-        y_pred = self.H @ x_pred
-        innov = meas.y - y_pred
-
-        R = self._get_R(meas)
-
-        S = self.H @ P_pred @ self.H.T + R
-        S_inv = la.inv(S)
-        nis = innov @ S_inv @ innov
-        K = P_pred @ self.H.T @ S_inv
-        x_hat = x_pred + K @ innov
-        # self.P_hat = (np.eye(self._num_states) - K @ self.H) @ P_pred
-        
-        # Joseph's Form cov update
-        A = np.eye(self._num_states) - K @ self.H
-        P = A @ P_pred @ A.T + K @ R @ K.T
-
-        return x_hat, P, nis
+    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
+        pass
     
 
     def compute_gain(self, time: float) -> NDArray:
-        _, P_pred = self.predict(time)
-        S = self.H @ P_pred @ self.H.T + self.R
-
-        return  P_pred @ self.H.T @ la.inv(S)
+        pass
     
 
     def compute_S(self, time: float) -> NDArray:
-        _, P_pred = self.predict(time)
-        return self.H @ P_pred @ self.H.T + self.R
+        pass
     
 
     def meas_likelihood(self, meas: Measurement) -> float:
-        x_pred, P_pred = self.predict(meas.time)
-
-        R = self._get_R(meas)
-
-        z_hat = meas.y - self.H @ x_pred
-        S = self.H @ P_pred @ self.H.T + R
-
-        return multivariate_normal.pdf(meas.y, mean=z_hat, cov=S)
+        pass
     
 
     def meas_distance(self, meas: Measurement) -> float:
-        x_pred, P_pred = self.predict(meas.time)
-
-        R = self._get_R(meas)
-
-        z_hat = meas.y - self.H @ x_pred
-        S = self.H @ P_pred @ self.H.T + R
-
-        return z_hat @ la.inv(S) @ z_hat
+        passs
 
 
-    def record(self) -> Dict[str, Any]:
-        r = dict()
-        n = len(self._filter_history)
-
-        r["t"] = np.zeros(n)
-        r["x_hat"] = np.zeros((n, self._num_states))
-        r["P_hat"] = np.zeros((n, self._num_states, self._num_states))
-
-        for i, (t, x, p) in enumerate(self._filter_history):
-            r["t"][i] = t
-            r["x_hat"][i] = x
-            r["P_hat"][i] = p
-        
-        return r

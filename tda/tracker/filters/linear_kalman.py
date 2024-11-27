@@ -10,8 +10,7 @@ from tda.common.measurement import Measurement
 
 
 class LinearKalman3(Filter):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray,
-                 pos_Q:float=100, vel_Q:float=10, accel_Q:float=1):
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q: float):
         super().__init__(x_hat_0, P_0)
 
         self.R: NDArray = np.zeros(3)
@@ -20,9 +19,7 @@ class LinearKalman3(Filter):
                                     [0, 1, 0],
                                     [0, 0, 1]])
         
-        self.pos_Q = pos_Q
-        self.vel_Q = vel_Q
-        self.accel_Q = accel_Q
+        self.q = q
         
     
     # x = [x, y, z]
@@ -33,7 +30,7 @@ class LinearKalman3(Filter):
     def Q(self, dt) -> NDArray:
         Q = np.zeros((3, 3))
         # position Q
-        Q[0, 0] = Q[1, 1] = Q[2, 2] = (self.pos_Q + self.vel_Q * dt + (self.accel_Q * dt ** 2) / 2) ** 2
+        Q[0, 0] = Q[1, 1] = Q[2, 2] = self.q * dt
 
         return Q
 
@@ -133,8 +130,8 @@ class LinearKalman3(Filter):
 
 
 class LinearKalman6(LinearKalman3):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray):
-        super().__init__(x_hat_0, P_0)
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q: float):
+        super().__init__(x_hat_0, P_0, q)
 
         self.H: NDArray = np.array([[1, 0, 0, 0, 0, 0],
                                     [0, 0, 1, 0, 0, 0],
@@ -158,11 +155,14 @@ class LinearKalman6(LinearKalman3):
 
     
     def Q(self, dt) -> NDArray:
+        qcv = self.q * dt * np.array([[(dt ** 2) / 3, dt / 2],
+                                      [dt / 2,        1]])
         Q = np.zeros((6, 6))
-        # position Q
-        Q[0, 0] = Q[2, 2] = Q[4, 4] = self.pos_Q ** 2
-        # velocity Q
-        Q[1, 1] = Q[3, 3] = Q[5, 5] = (self.vel_Q + self.accel_Q * dt) ** 2
+        
+        for i in range(3):
+            a = 2 * i
+            b = 2 * (i + 1)
+            Q[a : b, a : b] = qcv
 
         return Q
     
@@ -180,8 +180,8 @@ class LinearKalman6(LinearKalman3):
 
 
 class LinearKalman9(LinearKalman6):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray):
-        super().__init__(x_hat_0, P_0)
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q: float):
+        super().__init__(x_hat_0, P_0, q)
 
         self.H: NDArray = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
                                     [0, 0, 0, 1, 0, 0, 0, 0, 0],
@@ -206,13 +206,14 @@ class LinearKalman9(LinearKalman6):
 
     
     def Q(self, dt) -> NDArray:
+        qcv = self.q * dt * np.array([[(dt ** 2) / 3, dt / 2],
+                                      [dt / 2,        1]])
         Q = np.zeros((9, 9))
-        # position Q
-        Q[0, 0] = Q[3, 3] = Q[6, 6] = self.pos_Q ** 2
-        # velocity Q
-        Q[1, 1] = Q[4, 4] = Q[7, 7] = self.vel_Q ** 2
-        # accel Q
-        Q[2, 2] = Q[5, 5] = Q[8, 8] =  self.accel_Q ** 2
+        
+        for i in range(3):
+            a = 3 * i
+            b = 3 * (i + 1)
+            Q[a : b, a : b] = qcv
 
         return Q
 

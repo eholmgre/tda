@@ -23,7 +23,7 @@ class Initeator(metaclass=ABCMeta):
         
         if self.params.filter_nstate == 3:
             x_0 = meas.y
-            return LinearKalman3(x_0, P_0)
+            return LinearKalman3(x_0, P_0, self.params.filter_n3_q)
         
         if self.params.filter_nstate == 6:
             x_0 = np.zeros(6)
@@ -31,7 +31,7 @@ class Initeator(metaclass=ABCMeta):
             x_0[2] = meas.y[1]
             x_0[4] = meas.y[2]
 
-            return LinearKalman6(x_0, P_0)
+            return LinearKalman6(x_0, P_0, self.params.filter_n6_q)
         
         if self.params.filter_nstate == 9:
             x_0 = np.zeros(9)
@@ -39,7 +39,7 @@ class Initeator(metaclass=ABCMeta):
             x_0[3] = meas.y[1]
             x_0[6] = meas.y[2]
 
-            return LinearKalman9(x_0, P_0)
+            return LinearKalman9(x_0, P_0, self.params.filter_n9_q)
         
         logging.error(f"invalid filter type: {self.params.filter_nstate}")
         return None

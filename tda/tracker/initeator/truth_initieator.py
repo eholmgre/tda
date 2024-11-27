@@ -9,7 +9,7 @@ class TruthIniteator(Initeator):
     def initeate_tracks(self, frame: Sequence[Measurement]) -> List[Track]:
         global track_id_ctr
         
-        new_tracks = list()
+        new_tracks: List[Track] = list()
         
         for m in frame:
             if m.target_id != 0:

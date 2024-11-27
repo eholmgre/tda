@@ -72,10 +72,10 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
 
 def plot_track(track, fig=None, axs=None,):
     state_pos = track.state_pos
-    t = track.state_t
+    state_t = track.state_t
 
-    tmin = min(t)
-    tmax = max(t)
+    tmin = min(state_t)
+    tmax = max(state_t)
 
     track_id = track.track_id
 
@@ -92,6 +92,7 @@ def plot_track(track, fig=None, axs=None,):
 
     meas = track.meas_y
     N_meas = meas.shape[0]
+    meas_t = track.meas_t
 
     meas_lla = np.zeros((N_meas, 3))
 
@@ -109,18 +110,19 @@ def plot_track(track, fig=None, axs=None,):
         newfig = True
     axs[0, 0].set_title("lat lon position")
     axs[0, 0].plot(lla[:, 1], lla[:, 0], label=f"track {track_id}")
+    axs[0, 0].scatter(meas_lla[:, 1], meas_lla[:, 0], alpha=0.5, marker="x", label=f"meas {track_id}")
     axs[0, 1].set_title("altitude over time")
-    axs[0, 1].plot(t, lla[:, 2], label=f"track {track_id}")
+    axs[0, 1].plot(state_t, lla[:, 2], label=f"track {track_id}")
+    axs[0, 1].scatter(meas_t, meas_lla[:, 2], alpha=0.5, marker="x", label=f"meas {track_id}")
     axs[1, 0].set_title("chisq over time")
     axs[1, 0].set_ylim([0, 10])
     if newfig:
         chi2_low, chi2_high = chi2.interval(df=3, confidence=0.95)
         axs[1, 0].hlines(y=[chi2_low, chi2_high], xmin=tmin, xmax=tmax, linestyles="dashed", color="grey", label="chi2 95% ci")
-    axs[1, 0].plot(t[1:], track.state_score[1:], label=f"track {track_id}")
+    axs[1, 0].plot(state_t[1:], track.state_score[1:], label=f"track {track_id}")
 
-    axs[1, 1].set_title("measurements")
-    axs[0, 0].scatter(meas_lla[:, 1], meas_lla[:, 0], marker="x", label=f"tracl {track_id}")
-
+    axs[1, 1].set_title("meas dt")
+    axs[1, 1].plot(np.diff(meas_t))
     fig.suptitle(f"track {track_id}")
     fig.tight_layout()
 
