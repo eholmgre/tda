@@ -206,8 +206,9 @@ class LinearKalman9(LinearKalman6):
 
     
     def Q(self, dt) -> NDArray:
-        qcv = self.q * dt * np.array([[(dt ** 2) / 3, dt / 2],
-                                      [dt / 2,        1]])
+        qcv = self.q * dt * np.array([[0, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 1]])
         Q = np.zeros((9, 9))
         
         for i in range(3):
