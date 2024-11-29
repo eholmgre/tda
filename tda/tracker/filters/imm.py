@@ -15,7 +15,12 @@ class LinearKalmanManuver(LinearKalman9):
 
 
     def omega(self) -> float:
-        return la.norm(self.get_acceleration()[0]) / la.norm(self.get_position()[0])
+        o = la.norm(self.get_acceleration()[0]) / la.norm(self.get_position()[0])
+
+        if o != 0:
+            return o
+        
+        return 1
     
 
     def F(self, dt: float) -> NDArray:
@@ -26,9 +31,19 @@ class LinearKalmanManuver(LinearKalman9):
         sinodt = np.sin(omega * dt)
         cosodt = np.cos(omega * dt)
 
-        return np.array([[1, iomega * sinodt, iomegasq * (1 - cosodt)],
-                         [0,          cosodt, iomega * sinodt        ],
-                         [0, -omega * sinodt, cosodt                 ]])
+        F = np.zeros((9, 9))
+
+        fma = np.array([[1, iomega * sinodt, iomegasq * (1 - cosodt)],
+                        [0,          cosodt, iomega * sinodt        ],
+                        [0, -omega * sinodt, cosodt                 ]])
+
+        for i in range(3):
+            a = 3 * i
+            b = 3 * (i + 1)
+
+            F[a:b, a:b] = fma
+
+        return F
 
 
 class IMM(Filter):
@@ -39,7 +54,9 @@ class IMM(Filter):
         self.q_ca = q_ca
         self.q_turn = q_turn
 
-        self.cv_filter = LinearKalman6(x_hat_0, P_0, q_cv)
+        x_hat_0_cv, P_0_cv = self.drop_accel(x_hat_0, P_0)
+
+        self.cv_filter = LinearKalman6(x_hat_0_cv, P_0_cv, q_cv)
         self.ca_filter = LinearKalman9(x_hat_0, P_0, q_ca)
         self.manuver_filter = LinearKalmanManuver(x_hat_0, P_0, q_turn)
 
@@ -70,6 +87,21 @@ class IMM(Filter):
 
         return x_ca, P_ca
 
+    
+    def drop_accel(self, x_ca: NDArray, P_ca: NDArray) -> Tuple[NDArray, NDArray]:
+        """
+        Drop acceleration terms from x and P for use in the cv filter.
+        """
+        x_cv = np.zeros(6)
+        x_cv[::2] = x_ca[::3]
+        x_cv[1::2] = x_ca[1::3]
+
+        P_cv = np.zeros((6, 6))
+        P_cv[::2, ::2] = P_ca[::3, ::3]
+        P_cv[1::2, 1::2] = P_ca[1::3, 1::3]
+
+        return x_cv, P_cv
+
 
     def predict(self, time: float) -> Tuple[NDArray, NDArray]:
         x_cv_pre, P_cv_pre = self.augment_cv(*self.cv_filter.predict(time))
@@ -85,14 +117,18 @@ class IMM(Filter):
             for j in range(3):
                 omega[i, j] = (self.Pi[i, j] * self.mu[i]) / c_bar[j]
 
-        x_pre = omega @ xs
+        x_pre = np.zeros(9)
+        for i in range(3):
+            for j in range(3):
+                x_pre += omega[i, j] @ xs[j]
 
         Ps = np.array([P_cv_pre, P_ca_pre, P_ma_pre])
+        
         P_pre = np.zeros((9, 9))
-
         for i in range(3):
-            model_err = xs[i] - x_pre
-            P_pre += omega[i] * (np.outer(model_err, model_err) + Ps[i])
+            for j in range(3):
+                model_err = xs[j] - x_pre
+                P_pre += omega[i, j] * (np.outer(model_err, model_err) + Ps[j])
 
         return x_pre, P_pre
     
@@ -120,6 +156,7 @@ class IMM(Filter):
             Ps[i] = filt_P
             likeli[i] = self.filters[i].meas_likelihood(meas)
 
+        c_bar = self.mu @ self.Pi
         mu = c_bar * likeli  # element-wise mode prediction posterior
         self.mu /= mu.sum()
 
@@ -135,6 +172,7 @@ class IMM(Filter):
         return x_post, P_post        
     
 
+    # todo - figure out how to do these...
     def compute_gain(self, time: float) -> NDArray:
         return self.ca_filter.compute_gain(time)
     
@@ -149,3 +187,15 @@ class IMM(Filter):
 
     def meas_distance(self, meas: Measurement) -> float:
         return self.ca_filter.meas_distance(meas)
+
+
+    def get_position(self) -> Tuple[NDArray, NDArray]:
+        return self.ca_filter.get_position()
+    
+    
+    def get_velocity(self) -> Tuple[NDArray, NDArray]:
+        return self.ca_filter.get_velocity()
+    
+
+    def get_acceleration(self) -> Tuple[NDArray, NDArray]:
+        return self.ca_filter.get_acceleration()

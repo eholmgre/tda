@@ -12,7 +12,7 @@ class TrackerParam():
         self.initeator_type = initeator_type
         self.deletor_type = deletor_type
 
-        self.filter_nstate = filter_nstate
+        self.filter_nstate = filter_nstate  # 0 - imm, 3, 6, 9
         self.filter_startQ = filter_startQ
         self.filter_n3_q = filter_n3_q
         self.filter_n6_q = filter_n6_q
