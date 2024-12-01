@@ -2,13 +2,14 @@ import base64
 import json
 import os
 import pickle
+from typing import List
+
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pymap3d
 from scipy.stats import chi2
 
-from typing import List
 
 class TrackHist():
     def __init__(self, trk_id, meas_y, meas_R, meas_t, meas_targ, meas_sensor,

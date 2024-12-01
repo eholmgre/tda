@@ -17,9 +17,9 @@ class TrackWriter():
         if not self._do_write:
             return
         
-        hist_dict : Dict[str, Union[int, str]] = {
-            "name" : track.track_id,
-        }
+        hist_dict = track.filter.record()
+        
+        hist_dict["name"] = track.track_id
 
         N_meas = len(track.meas_hist)
         P_meas = 3 # track.meas_hist[0].y.shape[0]
@@ -41,18 +41,7 @@ class TrackWriter():
         hist_dict["meas_t"] = base64.b64encode(pickle.dumps(meas_t)).decode()
         hist_dict["meas_targ"] = base64.b64encode(pickle.dumps(meas_targ)).decode()
         hist_dict["meas_sensor"] = base64.b64encode(pickle.dumps(meas_sensor)).decode()
-
-        hist_dict["state_x"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.state))).decode()
-        hist_dict["state_P"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.cov))).decode()
-        hist_dict["state_t"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.time))).decode()
-        hist_dict["state_score"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.score))).decode()
-
-        hist_dict["state_pos"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.pos))).decode()
-        hist_dict["state_sig_pos"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.sig_pos))).decode()
-        hist_dict["state_vel"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.vel))).decode()
-        hist_dict["state_sig_vel"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.sig_vel))).decode()
-        hist_dict["state_accel"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.accel))).decode()
-        hist_dict["state_sig_accel"] = base64.b64encode(pickle.dumps(np.array(track.state_hist.sig_accel))).decode()
+        
         
         with open(f"{self._basename}/{track.track_id}.json", "w") as f:
             json.dump(hist_dict, f)

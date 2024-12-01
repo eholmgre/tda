@@ -20,8 +20,6 @@ import socket
 import sys
 
 
-
-
 def nac2R(nac):
     # https://mode-s.org/decode/content/ads-b/7-uncertainty.html
     sigma = np.nan
@@ -193,8 +191,8 @@ def main(opts):
                               filter_n6_q=0.1,
                               filter_n9_q=0.1,
                               filter_turn_q=0.1,
-                              record_tracks=False,
-                              record_basename="")
+                              record_tracks=True,
+                              record_basename="notebook/debug")
 
     tracker = Tracker(tracker_params)
 

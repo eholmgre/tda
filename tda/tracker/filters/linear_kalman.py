@@ -3,9 +3,10 @@ import numpy as np
 from numpy.typing import NDArray
 import scipy.linalg as la
 from scipy.stats import multivariate_normal
-from typing import Any, Dict, Tuple
+from typing import Tuple
 
 from .filter import Filter
+from .history.linear_kalman_history import LinearKalmanHistory
 from tda.common.measurement import Measurement
 
 
@@ -20,6 +21,8 @@ class LinearKalman3(Filter):
                                     [0, 0, 1]])
         
         self.q = q
+
+        self.history = LinearKalmanHistory(self)
         
     
     # x = [x, y, z]

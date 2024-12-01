@@ -1,11 +1,11 @@
 import numpy as np
 from numpy.typing import NDArray
 import scipy.linalg as la
-from scipy.stats import multivariate_normal
-from typing import Any, Callable, Dict, Tuple
+from typing import Tuple
 
 from .filter import Filter
 from .linear_kalman import LinearKalman6, LinearKalman9
+from .history.imm_history import IMMHistory
 from tda.common.measurement import Measurement
 
 
@@ -67,7 +67,9 @@ class IMM(Filter):
         self.Pi = np.array([[0.90, 0.08, 0.02],
                             [0.15, 0.70, 0.15],
                             [0.04, 0.16, 0.80]])
-
+        
+        self.history = IMMHistory(self)
+        
 
     def augment_cv(self, x_cv: NDArray, P_cv:NDArray) -> Tuple[NDArray, NDArray]:
         """
@@ -226,30 +228,66 @@ class IMM(Filter):
         return x_post, P_post        
     
 
-    # todo - figure out how to do these...
     def compute_gain(self, time: float) -> NDArray:
-        return self.ca_filter.compute_gain(time)
+        _, cv_gain = self.augment_cv(np.zeros(6), self.cv_filter.compute_gain(time))
+        ca_gain = self.ca_filter.compute_gain(time)
+        ma_gain = self.manuver_filter.compute_gain(time)
+
+        return self.mu[0] * cv_gain + self.mu[1] * ca_gain + self.mu[2] * ma_gain
     
 
     def compute_S(self, time: float) -> NDArray:
-        return self.ca_filter.compute_S(time)
-    
+        _, cv_S = self.augment_cv(np.zeros(6), self.cv_filter.compute_S(time))
+        ca_S = self.ca_filter.compute_S(time)
+        ma_S = self.manuver_filter.compute_S(time)
+
+        return self.mu[0] * cv_S + self.mu[1] * ca_S + self.mu[2] * ma_S    
+
 
     def meas_likelihood(self, meas: Measurement) -> float:
-        return self.ca_filter.meas_likelihood(meas)
-    
+        cv_likeli = self.cv_filter.meas_likelihood(meas)
+        ca_likeli = self.ca_filter.meas_likelihood(meas)
+        ma_likeli = self.manuver_filter.meas_likelihood(meas)
+
+        return self.mu[0] * cv_likeli + self.mu[1] * ca_likeli + self.mu[2] * ma_likeli        
+
 
     def meas_distance(self, meas: Measurement) -> float:
-        return self.ca_filter.meas_distance(meas)
+        cv_dist = self.cv_filter.meas_distance(meas)
+        ca_dist = self.ca_filter.meas_distance(meas)
+        ma_dist = self.manuver_filter.meas_distance(meas)
+
+        return self.mu[0] * cv_dist + self.mu[1] * ca_dist + self.mu[2] * ma_dist    
 
 
     def get_position(self) -> Tuple[NDArray, NDArray]:
-        return self.ca_filter.get_position()
-    
-    
-    def get_velocity(self) -> Tuple[NDArray, NDArray]:
-        return self.ca_filter.get_velocity()
+        cv_pos = self.cv_filter.get_position()
+        ca_pos = self.ca_filter.get_position()
+        ma_pos = self.manuver_filter.get_position()
+
+        imm_pos = self.mu[0] * cv_pos[0] + self.mu[1] * ca_pos[0] + self.mu[2] * ma_pos[0]
+        imm_sig_pos = self.mu[0] * cv_pos[1] + self.mu[1] * ca_pos[1] + self.mu[2] * ma_pos[1]
+
+        return imm_pos, imm_sig_pos
     
 
+    def get_velocity(self) -> Tuple[NDArray, NDArray]:
+        cv_vel = self.cv_filter.get_velocity()
+        ca_vel = self.ca_filter.get_velocity()
+        ma_vel = self.manuver_filter.get_velocity()
+
+        imm_vel = self.mu[0] * cv_vel[0] + self.mu[1] * ca_vel[0] + self.mu[2] * ma_vel[0]
+        imm_sig_vel = self.mu[0] * cv_vel[1] + self.mu[1] * ca_vel[1] + self.mu[2] * ma_vel[1]
+
+        return imm_vel, imm_sig_vel
+
+
     def get_acceleration(self) -> Tuple[NDArray, NDArray]:
-        return self.ca_filter.get_acceleration()
+        cv_accel = self.cv_filter.get_acceleration()
+        ca_accel = self.ca_filter.get_acceleration()
+        ma_accel = self.manuver_filter.get_acceleration()
+
+        imm_accel = self.mu[0] * cv_accel[0] + self.mu[1] * ca_accel[0] + self.mu[2] * ma_accel[0]
+        imm_sig_accel = self.mu[0] * cv_accel[1] + self.mu[1] * ca_accel[1] + self.mu[2] * ma_accel[1]
+
+        return imm_accel, imm_sig_accel
