@@ -5,22 +5,31 @@ from typing import Tuple
 
 from .filter import Filter
 from .linear_kalman import LinearKalman6, LinearKalman9
-from .history.imm_history import IMMHistory
+from .history.imm_history import IMMHistory, LinearKalmanManauverHistory
 from tda.common.measurement import Measurement
 
 
 class LinearKalmanManuver(LinearKalman9):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q: float):
-        super().__init__(x_hat_0, P_0, q)
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, t0: float, q: float):
+        super().__init__(x_hat_0, P_0, t0, q)
+
+        self.update_omega: float = -1.0
+
+        self.history = LinearKalmanManauverHistory(self)
 
 
     def omega(self) -> float:
-        o = la.norm(self.get_acceleration()[0]) / la.norm(self.get_position()[0])
+        A = self.get_acceleration()[0]
+        V = self.get_velocity()[0]
 
-        if o != 0:
-            return o
-        
-        return 1
+        if np.all(A == 0) or np.all(V == 0):
+            o = 1
+        else:
+            o = la.norm(A) / la.norm(V)
+
+        self.update_omega = o
+
+        return o
     
 
     def F(self, dt: float) -> NDArray:
@@ -47,8 +56,8 @@ class LinearKalmanManuver(LinearKalman9):
 
 
 class IMM(Filter):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q_cv: float, q_ca: float, q_turn: float):
-        super().__init__(x_hat_0, P_0)
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, t0: float, q_cv: float, q_ca: float, q_turn: float):
+        super().__init__(x_hat_0, P_0, t0)
 
         self.q_cv = q_cv
         self.q_ca = q_ca
@@ -56,9 +65,9 @@ class IMM(Filter):
 
         x_hat_0_cv, P_0_cv = self.drop_accel(x_hat_0, P_0)
 
-        self.cv_filter = LinearKalman6(x_hat_0_cv, P_0_cv, q_cv)
-        self.ca_filter = LinearKalman9(x_hat_0, P_0, q_ca)
-        self.manuver_filter = LinearKalmanManuver(x_hat_0, P_0, q_turn)
+        self.cv_filter = LinearKalman6(x_hat_0_cv, P_0_cv, t0, q_cv)
+        self.ca_filter = LinearKalman9(x_hat_0, P_0, t0, q_ca)
+        self.manuver_filter = LinearKalmanManuver(x_hat_0, P_0, t0, q_turn)
 
         self.filters = [self.cv_filter, self.ca_filter, self.manuver_filter]
 

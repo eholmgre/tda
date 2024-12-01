@@ -11,13 +11,13 @@ import pymap3d
 from scipy.stats import chi2
 
 from tda.tracker.filters.history.linear_kalman_history import LinearKalmanHistory
-from tda.tracker.filters.history.imm_history import IMMHistory
+from tda.tracker.filters.history.imm_history import IMMHistory, LinearKalmanManauverHistory
 
 
 class TrackHist():
     def __init__(self, trk_id, meas_y, meas_R, meas_t, meas_targ, meas_sensor,
                  state_x, state_P, state_t, state_score, state_pos, state_sig_pos,
-                 state_vel, state_sig_vel, state_accel, state_sig_accel, state_mu=None):
+                 state_vel, state_sig_vel, state_accel, state_sig_accel, num_hits, state_mu=None, state_omega=None):
         self.track_id = trk_id
         self.meas_y = meas_y
         self.meas_R = meas_R
@@ -38,7 +38,14 @@ class TrackHist():
         self.state_accel = state_accel
         self.state_sig_accel = state_sig_accel
 
+        self.num_hits = num_hits
+
         self.state_mu = state_mu
+        self.state_omega = state_omega
+
+
+    def __repr__(self) -> str:
+        return f"TrackHist: {self.track_id}, num hits: {self.num_hits}"
 
 
 def read_tracks(basedir:str ) -> List[TrackHist]:
@@ -67,7 +74,7 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
             tracks.append(TrackHist(name, meas_y, meas_R, meas_t, meas_targ, meas_sensor,
                                     filt_hist.state, filt_hist.cov, filt_hist.time, filt_hist.score,
                                     filt_hist.pos, filt_hist.sig_pos, filt_hist.vel, filt_hist.sig_vel,
-                                    filt_hist.accel, filt_hist.sig_accel))
+                                    filt_hist.accel, filt_hist.sig_accel, filt_hist.num_updates))
 
         elif filter_type == "imm":
             cv_dict = dict()
@@ -90,7 +97,7 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
             tracks.append(TrackHist(f"{name}_cv", meas_y, meas_R, meas_t, meas_targ, meas_sensor,
                                     cv_hist.state, cv_hist.cov, cv_hist.time, cv_hist.score,
                                     cv_hist.pos, cv_hist.sig_pos, cv_hist.vel, cv_hist.sig_vel,
-                                    cv_hist.accel, cv_hist.sig_accel))
+                                    cv_hist.accel, cv_hist.sig_accel, cv_hist.num_updates))
 
             ca_hist = LinearKalmanHistory(None)
             ca_hist.read(ca_dict)
@@ -98,17 +105,18 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
             tracks.append(TrackHist(f"{name}_ca", meas_y, meas_R, meas_t, meas_targ, meas_sensor,
                                     ca_hist.state, ca_hist.cov, ca_hist.time, ca_hist.score,
                                     ca_hist.pos, ca_hist.sig_pos, ca_hist.vel, ca_hist.sig_vel,
-                                    ca_hist.accel, ca_hist.sig_accel))
+                                    ca_hist.accel, ca_hist.sig_accel, ca_hist.num_updates))
 
 
             # should add omega
-            ma_hist = LinearKalmanHistory(None)
+            ma_hist = LinearKalmanManauverHistory(None)
             ma_hist.read(ma_dict)
 
             tracks.append(TrackHist(f"{name}_ma", meas_y, meas_R, meas_t, meas_targ, meas_sensor,
                                     ma_hist.state, ma_hist.cov, ma_hist.time, ma_hist.score,
                                     ma_hist.pos, ma_hist.sig_pos, ma_hist.vel, ma_hist.sig_vel,
-                                    ma_hist.accel, ma_hist.sig_accel))
+                                    ma_hist.accel, ma_hist.sig_accel, ma_hist.num_updates,
+                                    state_omega=ma_hist.omega))
 
             imm_hist = IMMHistory(None)
             imm_hist.read(track_dict)
@@ -116,8 +124,8 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
             tracks.append(TrackHist(f"{name}_imm", meas_y, meas_R, meas_t, meas_targ, meas_sensor,
                                     imm_hist.state, imm_hist.cov, imm_hist.time, imm_hist.score,
                                     imm_hist.pos, imm_hist.sig_pos, imm_hist.vel, imm_hist.sig_vel,
-                                    imm_hist.accel, imm_hist.sig_accel, imm_hist.mu))
-
+                                    imm_hist.accel, imm_hist.sig_accel, imm_hist.num_updates,
+                                    state_mu=imm_hist.mu))
 
     return tracks
 

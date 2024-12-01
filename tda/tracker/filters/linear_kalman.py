@@ -11,8 +11,8 @@ from tda.common.measurement import Measurement
 
 
 class LinearKalman3(Filter):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q: float):
-        super().__init__(x_hat_0, P_0)
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, t0: float, q: float):
+        super().__init__(x_hat_0, P_0, t0)
 
         self.R: NDArray = np.zeros(3)
 
@@ -133,8 +133,8 @@ class LinearKalman3(Filter):
 
 
 class LinearKalman6(LinearKalman3):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q: float):
-        super().__init__(x_hat_0, P_0, q)
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, t0: float, q: float):
+        super().__init__(x_hat_0, P_0, t0, q)
 
         self.H: NDArray = np.array([[1, 0, 0, 0, 0, 0],
                                     [0, 0, 1, 0, 0, 0],
@@ -183,8 +183,8 @@ class LinearKalman6(LinearKalman3):
 
 
 class LinearKalman9(LinearKalman6):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray, q: float):
-        super().__init__(x_hat_0, P_0, q)
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, t0: float, q: float):
+        super().__init__(x_hat_0, P_0, t0, q)
 
         self.H: NDArray = np.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
                                     [0, 0, 0, 1, 0, 0, 0, 0, 0],

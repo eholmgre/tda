@@ -7,13 +7,13 @@ from tda.common.measurement import Measurement
 
 
 class Filter(metaclass=ABCMeta):
-    def __init__(self, x_hat_0: NDArray, P0: NDArray) -> None:
+    def __init__(self, x_hat_0: NDArray, P0: NDArray, t0: float) -> None:
         self._num_states = x_hat_0.shape[0]
         self.x_hat = x_hat_0
         self.P = P0
 
         self.history = FilterHistory(self, "")
-        self.update_time = -1.0
+        self.update_time = t0
         self.update_score = -1.0
         self.total_score = -1.0  # todo compute this
 
