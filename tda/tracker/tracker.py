@@ -54,7 +54,7 @@ class Tracker():
             self.deletor = MissBasedDeletor()
         elif self.params.deletor_type == "time":
             # todo add time param
-            self.deletor = TimeBasedDeletor()
+            self.deletor = TimeBasedDeletor(self.params.delete_time)
         else:
             logging.error(f"Unknown deletor type: \"{self.params.deletor_type}\". Exiting.")
             sys.exit(-1)
@@ -85,4 +85,5 @@ class Tracker():
     def print_tracks(self):
         print(f" Maintaining: {len(self.tracks)} tracks.")
         for t in self.tracks:
-            print(f"\t{t}")
+            if len(t.meas_hist) > 1:
+                print(f"\t{t}")

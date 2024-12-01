@@ -209,18 +209,18 @@ class IMM(Filter):
         self.ca_filter.update_external(x_mix[1], P_mix[1], last_time)
         self.manuver_filter.update_external(x_mix[2], P_mix[2], last_time)
 
+        # grab update likelihoods before changing filter state
+        cv_likeli = self.cv_filter.meas_likelihood(meas)
+        ca_likeli = self.ca_filter.meas_likelihood(meas)
+        ma_likeli = self.manuver_filter.meas_likelihood(meas)
+        likeli = np.array([cv_likeli, ca_likeli, ma_likeli])
+
         x_post_cv, P_post_cv = self.augment_cv(*self.cv_filter.update(meas))
         x_post_ca, P_post_ca = self.ca_filter.update(meas)
         x_post_ma, P_post_ma = self.manuver_filter.update(meas)
 
-        cv_likeli = self.cv_filter.meas_likelihood(meas)
-        ca_likeli = self.ca_filter.meas_likelihood(meas)
-        ma_likeli = self.manuver_filter.meas_likelihood(meas)
-
         xs = np.array([x_post_cv, x_post_ca, x_post_ma])
         Ps = np.array([P_post_cv, P_post_ca, P_post_ma])
-        likeli = np.array([cv_likeli, ca_likeli, ma_likeli])
-
 
         c_bar = self.mu @ self.Pi
         self.mu = c_bar * likeli  # element-wise mode prediction posterior

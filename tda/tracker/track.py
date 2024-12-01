@@ -7,10 +7,10 @@ from tda.common.measurement import Measurement
 
 
 class Track():
-    def __init__(self, track_id: int, track_filter: Filter):
+    def __init__(self, track_id: int, track_filter: Filter, meas: Measurement):
         self.track_id = track_id
         self.filter = track_filter
-        self.meas_hist: List[Measurement]= list()
+        self.meas_hist: List[Measurement] = [meas]
 
     
     def predict(self, time: float) -> Tuple[NDArray, NDArray]:

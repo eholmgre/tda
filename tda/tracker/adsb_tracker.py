@@ -186,6 +186,7 @@ def main(opts):
     tracker_params = TrackerParam(associator_type="truth",
                               initeator_type="truth",
                               deletor_type="time",
+                              delete_time=30,
                               filter_nstate=0,
                               filter_startQ=np.array([1e4, 1e9, 1e9, 1e4, 1e9, 1e9, 1e4, 1e9, 1e9]),
                               filter_n6_q=0.1,

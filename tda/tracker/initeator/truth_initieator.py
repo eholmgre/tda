@@ -13,9 +13,9 @@ class TruthIniteator(Initeator):
         
         for m in frame:
             if m.target_id != 0:
-                trk = Track(track_id_ctr, self.create_filter(m))
+                trk = Track(track_id_ctr, self.create_filter(m), m)
                 track_id_ctr += 1
-                trk.update(m)
+                #trk.update(m)
                 new_tracks.append(trk)
 
         return new_tracks
