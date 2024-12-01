@@ -56,7 +56,6 @@ class FilterHistory():
         hist_dict["state_P"] = base64.b64encode(pickle.dumps(np.array(self.cov))).decode()
         hist_dict["state_t"] = base64.b64encode(pickle.dumps(np.array(self.time))).decode()
         hist_dict["state_score"] = base64.b64encode(pickle.dumps(np.array(self.score))).decode()
-
         hist_dict["state_pos"] = base64.b64encode(pickle.dumps(np.array(self.pos))).decode()
         hist_dict["state_sig_pos"] = base64.b64encode(pickle.dumps(np.array(self.sig_pos))).decode()
         hist_dict["state_vel"] = base64.b64encode(pickle.dumps(np.array(self.vel))).decode()
@@ -65,3 +64,16 @@ class FilterHistory():
         hist_dict["state_sig_accel"] = base64.b64encode(pickle.dumps(np.array(self.sig_accel))).decode()
 
         return hist_dict
+
+
+    def read(self, hist_dict):
+        self.state = pickle.loads(base64.b64decode(hist_dict["state_x"]))
+        self.cov = pickle.loads(base64.b64decode(hist_dict["state_P"]))
+        self.time = pickle.loads(base64.b64decode(hist_dict["state_t"]))
+        self.score = pickle.loads(base64.b64decode(hist_dict["state_score"]))
+        self.pos = pickle.loads(base64.b64decode(hist_dict["state_pos"]))
+        self.state_sig_pos = pickle.loads(base64.b64decode(hist_dict["state_sig_pos"]))
+        self.vel = pickle.loads(base64.b64decode(hist_dict["state_vel"]))
+        self.sig_vel = pickle.loads(base64.b64decode(hist_dict["state_sig_vel"]))
+        self.accel = pickle.loads(base64.b64decode(hist_dict["state_accel"]))
+        self.sig_accel = pickle.loads(base64.b64decode(hist_dict["state_sig_accel"]))

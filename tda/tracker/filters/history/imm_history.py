@@ -24,7 +24,7 @@ class IMMHistory(FilterHistory):
     def save(self) -> Dict:
         base_dict = super().save()
 
-        base_dict["mu"] = base64.b64encode(pickle.dumps(np.array(self.mu))).decode()
+        base_dict["imm_mu"] = base64.b64encode(pickle.dumps(np.array(self.mu))).decode()
 
         cv_dict = self.filt.cv_filter.record()
         ca_dict = self.filt.cv_filter.record()
@@ -40,3 +40,8 @@ class IMMHistory(FilterHistory):
             base_dict[f"ma_{k}"] = v
 
         return base_dict
+
+
+    def read(self, hist_dict):
+        super().read(hist_dict)
+        self.mu = pickle.loads(base64.b64decode(hist_dict["imm_mu"]))

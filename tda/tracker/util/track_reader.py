@@ -10,11 +10,14 @@ import numpy as np
 import pymap3d
 from scipy.stats import chi2
 
+from tda.tracker.filters.history.linear_kalman_history import LinearKalmanHistory
+from tda.tracker.filters.history.imm_history import IMMHistory
+
 
 class TrackHist():
     def __init__(self, trk_id, meas_y, meas_R, meas_t, meas_targ, meas_sensor,
                  state_x, state_P, state_t, state_score, state_pos, state_sig_pos,
-                 state_vel, state_sig_vel, state_accel, state_sig_accel):
+                 state_vel, state_sig_vel, state_accel, state_sig_accel, state_mu=None):
         self.track_id = trk_id
         self.meas_y = meas_y
         self.meas_R = meas_R
@@ -35,6 +38,8 @@ class TrackHist():
         self.state_accel = state_accel
         self.state_sig_accel = state_sig_accel
 
+        self.state_mu = state_mu
+
 
 def read_tracks(basedir:str ) -> List[TrackHist]:
     track_files = [f for f in os.listdir(basedir) if f.split(".")[-1] == "json"]
@@ -46,27 +51,73 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
             track_dict = json.load(f)
 
         name = track_dict["name"]
+    
         meas_y = pickle.loads(base64.b64decode(track_dict["meas_y"]))
         meas_R = pickle.loads(base64.b64decode(track_dict["meas_R"]))
         meas_t = pickle.loads(base64.b64decode(track_dict["meas_t"]))
         meas_targ = pickle.loads(base64.b64decode(track_dict["meas_targ"]))
         meas_sensor = pickle.loads(base64.b64decode(track_dict["meas_sensor"]))
-        state_x = pickle.loads(base64.b64decode(track_dict["state_x"]))
-        state_P = pickle.loads(base64.b64decode(track_dict["state_P"]))
-        state_t = pickle.loads(base64.b64decode(track_dict["state_t"]))
-        state_score = pickle.loads(base64.b64decode(track_dict["state_score"]))
 
-        state_pos = pickle.loads(base64.b64decode(track_dict["state_pos"]))
-        state_sig_pos = pickle.loads(base64.b64decode(track_dict["state_sig_pos"]))
-        state_vel = pickle.loads(base64.b64decode(track_dict["state_vel"]))
-        state_sig_vel = pickle.loads(base64.b64decode(track_dict["state_sig_vel"]))
-        state_accel = pickle.loads(base64.b64decode(track_dict["state_accel"]))
-        state_sig_accel = pickle.loads(base64.b64decode(track_dict["state_sig_accel"]))
+        filter_type = track_dict["filter_type"]
 
-        tracks.append(TrackHist(name, meas_y, meas_R, meas_t, meas_targ, meas_sensor,
-                                state_x, state_P, state_t, state_score,
-                                state_pos, state_sig_pos, state_vel, state_sig_vel,
-                                state_accel, state_sig_accel))
+        if filter_type == "LinearKalman":
+            filt_hist = LinearKalmanHistory(None)
+            filt_hist.read(track_dict)
+
+            tracks.append(TrackHist(name, meas_y, meas_R, meas_t, meas_targ, meas_sensor,
+                                    filt_hist.state, filt_hist.cov, filt_hist.time, filt_hist.score,
+                                    filt_hist.pos, filt_hist.sig_pos, filt_hist.vel, filt_hist.sig_vel,
+                                    filt_hist.accel, filt_hist.sig_accel))
+
+        elif filter_type == "imm":
+            cv_dict = dict()
+            ca_dict = dict()
+            ma_dict = dict()
+
+            for k, v in track_dict.items():
+                if k[:3] == "cv_":
+                    cv_dict[k[3:]] = v
+            
+                elif k[:3] == "ca_":
+                    ca_dict[k[3:]] = v
+                
+                elif k[:3] == "ma_":
+                    ma_dict[k[3:]] = v
+
+            cv_hist = LinearKalmanHistory(None)
+            cv_hist.read(cv_dict)
+
+            tracks.append(TrackHist(f"{name}_cv", meas_y, meas_R, meas_t, meas_targ, meas_sensor,
+                                    cv_hist.state, cv_hist.cov, cv_hist.time, cv_hist.score,
+                                    cv_hist.pos, cv_hist.sig_pos, cv_hist.vel, cv_hist.sig_vel,
+                                    cv_hist.accel, cv_hist.sig_accel))
+
+            ca_hist = LinearKalmanHistory(None)
+            ca_hist.read(ca_dict)
+            
+            tracks.append(TrackHist(f"{name}_ca", meas_y, meas_R, meas_t, meas_targ, meas_sensor,
+                                    ca_hist.state, ca_hist.cov, ca_hist.time, ca_hist.score,
+                                    ca_hist.pos, ca_hist.sig_pos, ca_hist.vel, ca_hist.sig_vel,
+                                    ca_hist.accel, ca_hist.sig_accel))
+
+
+            # should add omega
+            ma_hist = LinearKalmanHistory(None)
+            ma_hist.read(ma_dict)
+
+            tracks.append(TrackHist(f"{name}_ma", meas_y, meas_R, meas_t, meas_targ, meas_sensor,
+                                    ma_hist.state, ma_hist.cov, ma_hist.time, ma_hist.score,
+                                    ma_hist.pos, ma_hist.sig_pos, ma_hist.vel, ma_hist.sig_vel,
+                                    ma_hist.accel, ma_hist.sig_accel))
+
+            imm_hist = IMMHistory(None)
+            imm_hist.read(track_dict)
+
+            tracks.append(TrackHist(f"{name}_imm", meas_y, meas_R, meas_t, meas_targ, meas_sensor,
+                                    imm_hist.state, imm_hist.cov, imm_hist.time, imm_hist.score,
+                                    imm_hist.pos, imm_hist.sig_pos, imm_hist.vel, imm_hist.sig_vel,
+                                    imm_hist.accel, imm_hist.sig_accel, imm_hist.mu))
+
 
     return tracks
 

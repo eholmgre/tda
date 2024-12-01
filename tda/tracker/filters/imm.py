@@ -225,6 +225,9 @@ class IMM(Filter):
             filt_err = xs[i] - x_post
             P_post += self.mu[i] * (np.outer(filt_err, filt_err) + Ps[i])
 
+        imm_inov = (self.ca_filter.H @ x_pre) - (self.ca_filter.H @ x_post)
+        self.update_score = imm_inov @ self.ca_filter.H @ P_post @ self.ca_filter.H.T @ imm_inov
+
         return x_post, P_post        
     
 
