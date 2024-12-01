@@ -103,13 +103,24 @@ class IMM(Filter):
         return x_cv, P_cv
 
 
-    def predict(self, time: float) -> Tuple[NDArray, NDArray]:
-        x_cv_pre, P_cv_pre = self.augment_cv(*self.cv_filter.predict(time))
-        x_ca_pre, P_ca_pre = self.ca_filter.predict(time)
-        x_ma_pre, P_ma_pre = self.manuver_filter.predict(time)
+    def _do_predict(self, time: float) -> Tuple[NDArray, NDArray, NDArray, NDArray]:
+        dt = time - self.update_time
 
-        xs = np.array([x_cv_pre, x_ca_pre, x_ma_pre])
+        ## grab last update posterior states for mixing in the imm
+        x_cv = self.cv_filter.x_hat
+        P_cv = self.cv_filter.P
+        x_cv, P_cv = self.augment_cv(x_cv, P_cv)
 
+        x_ca = self.ca_filter.x_hat
+        P_ca = self.ca_filter.P
+
+        x_ma = self.manuver_filter.x_hat
+        P_ma = self.manuver_filter.P
+
+        xs = np.array([x_cv, x_ca, x_ma])
+        Ps = np.array([P_cv, P_ca, P_ma])
+
+        ## compute chapman-kolomologrov transition probabilities
         c_bar = self.mu @ self.Pi
         omega = np.zeros((3, 3))
         
@@ -117,18 +128,53 @@ class IMM(Filter):
             for j in range(3):
                 omega[i, j] = (self.Pi[i, j] * self.mu[i]) / c_bar[j]
 
-        x_pre = np.zeros(9)
+        ## compute chapman-kolomologrov mixed priors from transition probabilities & last cycle's posteriors
+        x_mix = np.zeros((3,9))
         for i in range(3):
             for j in range(3):
-                x_pre += omega[i, j] @ xs[j]
+                x_mix[i] += omega[j, i] * xs[j]  # omega i,j might be reversed
 
-        Ps = np.array([P_cv_pre, P_ca_pre, P_ma_pre])
-        
+        P_mix = np.zeros((3, 9, 9))
+
+        for i in range(3):
+            for j in range(3):
+                model_err = xs[j] - x_mix[j]
+                P_mix[i] += omega[j, i] * (np.outer(model_err, model_err) + Ps[j])
+
+        ## now that we have chapman-kolomologrov mixed priors, propagate with the filter's dynamics to get prediction priors
+        # cv
+        x_cv_mix, P_cv_mix = self.drop_accel(x_mix[0], P_mix[0])
+        F_cv = self.cv_filter.F(dt)
+
+        x_pre_cv = F_cv @ x_cv_mix
+        P_pre_cv = F_cv @ P_cv_mix @ F_cv.T + self.cv_filter.Q(dt)
+
+        x_pre_cv, P_pre_cv = self.augment_cv(x_pre_cv, P_pre_cv)
+
+        # ca
+        F_ca = self.ca_filter.F(dt)
+
+        x_pre_ca = F_ca @ x_mix[1]
+        P_pre_ca = F_ca @ P_mix[1] @ F_ca.T + self.ca_filter.Q(dt)
+
+        # ma
+        F_ma = self.manuver_filter.F(dt)  # this won't correctly count for omega from the mix
+
+        x_pre_ma = F_ma @ x_mix[2]
+        P_pre_ma = F_ma @ P_mix[2] @ F_ma.T + self.manuver_filter.Q(dt)
+
+        x_prop = np.array([x_pre_cv, x_pre_ca, x_pre_ma])
+        P_prop = np.array([P_pre_cv, P_pre_ca, P_pre_ma])
+
+        x_pre = self.mu @ x_prop
         P_pre = np.zeros((9, 9))
         for i in range(3):
-            for j in range(3):
-                model_err = xs[j] - x_pre
-                P_pre += omega[i, j] * (np.outer(model_err, model_err) + Ps[j])
+            P_pre += self.mu[i] * P_prop[i]
+
+        return x_pre, P_pre, x_mix, P_mix
+    
+    def predict(self, time: float) -> Tuple[NDArray, NDArray]:
+        x_pre, P_pre, _, _ = self._do_predict(time)
 
         return x_pre, P_pre
     
@@ -144,30 +190,38 @@ class IMM(Filter):
     
 
     def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
-        x_pre, P_pre = self.predict(meas.time)
+        x_pre, P_pre, x_mix, P_mix = self._do_predict(meas.time)
 
-        xs = np.zeros((3, 9))
-        Ps = np.zeros((3, 9, 9))
-        likeli = np.zeros(3)
+        # we need to do the updates with the mixed states from the prediction, so jam those into the filters
+        last_time = self.update_time
+        self.cv_filter.update_external(*self.drop_accel(x_mix[0], P_mix[0]), last_time)
+        self.ca_filter.update_external(x_mix[1], P_mix[1], last_time)
+        self.manuver_filter.update_external(x_mix[2], P_mix[2], last_time)
 
-        for i in range(3):
-            filt_x, filt_P = self.filters[i].update(meas)
-            xs[i] = filt_x
-            Ps[i] = filt_P
-            likeli[i] = self.filters[i].meas_likelihood(meas)
+        x_post_cv, P_post_cv = self.augment_cv(*self.cv_filter.update(meas))
+        x_post_ca, P_post_ca = self.ca_filter.update(meas)
+        x_post_ma, P_post_ma = self.manuver_filter.update(meas)
+
+        cv_likeli = self.cv_filter.meas_likelihood(meas)
+        ca_likeli = self.ca_filter.meas_likelihood(meas)
+        ma_likeli = self.manuver_filter.meas_likelihood(meas)
+
+        xs = np.array([x_post_cv, x_post_ca, x_post_ma])
+        Ps = np.array([P_post_cv, P_post_ca, P_post_ma])
+        likeli = np.array([cv_likeli, ca_likeli, ma_likeli])
+
 
         c_bar = self.mu @ self.Pi
-        mu = c_bar * likeli  # element-wise mode prediction posterior
-        self.mu /= mu.sum()
+        self.mu = c_bar * likeli  # element-wise mode prediction posterior
+        self.mu /= self.mu.sum()
 
         x_post = self.mu @ xs
 
         P_post = np.zeros((9, 9))
 
         for i in range(3):
-            filt_err = self.filters[i].x_hat - x_post
-            P_post += mu[i] * (np.outer(filt_err, filt_err) + Ps[i])
-
+            filt_err = xs[i] - x_post
+            P_post += self.mu[i] * (np.outer(filt_err, filt_err) + Ps[i])
 
         return x_post, P_post        
     

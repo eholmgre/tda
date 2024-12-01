@@ -103,7 +103,7 @@ class LinearKalman3(Filter):
         z_hat = meas.y - self.H @ x_pred
         S = self.H @ P_pred @ self.H.T + R
 
-        return multivariate_normal.pdf(meas.y, mean=z_hat, cov=S)
+        return multivariate_normal.pdf(z_hat, cov=S)
     
 
     def meas_distance(self, meas: Measurement) -> float:
