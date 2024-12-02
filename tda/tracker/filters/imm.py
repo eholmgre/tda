@@ -56,7 +56,7 @@ class LinearKalmanManuver(LinearKalman9):
 
 
 class IMM(Filter):
-    def __init__(self, x_hat_0: NDArray, P_0: NDArray, t0: float, q_cv: float, q_ca: float, q_turn: float):
+    def __init__(self, x_hat_0: NDArray, P_0: NDArray, t0: float, q_cv: float, q_ca: float, q_turn: float, mu_0: NDArray, Pi: NDArray):
         super().__init__(x_hat_0, P_0, t0)
 
         self.q_cv = q_cv
@@ -71,12 +71,9 @@ class IMM(Filter):
 
         self.filters = [self.cv_filter, self.ca_filter, self.manuver_filter]
 
-        self.mu = np.array([0.7, 0.2, 0.1])
-        
-        self.Pi = np.array([[0.90, 0.08, 0.02],
-                            [0.15, 0.70, 0.15],
-                            [0.04, 0.16, 0.80]])
-        
+        self.mu = mu_0
+        self.Pi = Pi
+
         self.history = IMMHistory(self)
         
 

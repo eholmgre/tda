@@ -29,7 +29,8 @@ class Initeator(metaclass=ABCMeta):
             x_0[3] = meas.y[1]
             x_0[6] = meas.y[2]
 
-            return IMM(x_0, P_0, t0, self.params.filter_n6_q, self.params.filter_n9_q, self.params.filter_turn_q)
+            return IMM(x_0, P_0, t0, self.params.filter_n6_q, self.params.filter_n9_q, self.params.filter_turn_q,
+                       self.params.filter_imm_mu_0, self.params.filter_imm_Pi)
         
         if self.params.filter_nstate == 3:
             x_0 = meas.y

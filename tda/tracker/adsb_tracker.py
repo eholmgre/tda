@@ -7,6 +7,8 @@ from tda.tracker.filters.linear_kalman import LinearKalman6
 from tda.tracker.track import Track
 from tda.tracker.tracker import Tracker
 from tda.tracker.tracker_param import TrackerParam
+from tda.tracker.conflict import ConflictDetector
+from tda.tracker.util.track_writer import TrackWriter
 
 import numpy as np
 import pymap3d
@@ -186,7 +188,7 @@ def main(opts):
     tracker_params = TrackerParam(associator_type="truth",
                               initeator_type="truth",
                               deletor_type="time",
-                              delete_time=30,
+                              delete_time=60,
                               filter_nstate=0,
                               filter_startQ=np.array([1e4, 1e9, 1e9, 1e4, 1e9, 1e9, 1e4, 1e9, 1e9]),
                               filter_n6_q=0.1,
@@ -196,6 +198,8 @@ def main(opts):
                               record_basename="notebook/debug")
 
     tracker = Tracker(tracker_params)
+    confdetect = ConflictDetector(gate_distance=5000, check_times=[10, 30, 60, 90, 120], prob_threshold=0.0005)
+    writer = TrackWriter(tracker_params.record_tracks, tracker_params.record_basename)
 
     if opts.filename:
         input_stream = FileInputStream(opts.filename)
@@ -226,24 +230,12 @@ def main(opts):
         tracker.process_frame([message])
         tracker.print_tracks()
 
-        # for t1 in tracker.tracks:
-        #     t1_x, t1_P = t1.predict(30)
-        #     for t2 in tracker.tracks:
-        #         # don't care about self collison
-        #         if t1.track_id == t2.track_id:
-        #             continue
+        conflicts = confdetect.detect(tracker.tracks)
 
-        #         t2_x, t2_P = t2.predict(30)
+        for c in conflicts:
+            logging.info(c)
+            writer.write_conflict(c)
 
-        #         delta = t1_x[::3] - t2_x[::3]
-
-        #         # this is probbably biased
-        #         P_pool = t1_P[::3,::3] + t2_P[::3,::3]
-
-        #         P_inv = la.inv(P_pool)
-
-        #         if np.sum(delta @ P_inv @ delta) < 5000:
-        #             print(f"warning! track {t1.track_id} collision possibility with {t2.track_id}")
 
     tracker.cleanup()
     TargetIDAssigner.clear()

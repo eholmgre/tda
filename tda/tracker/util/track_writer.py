@@ -6,6 +6,8 @@ from typing import Dict, Union
 
 from tda.common.measurement import Measurement
 from tda.tracker.track import Track
+from tda.tracker.conflict import Conflict
+
 
 class TrackWriter():
     def __init__(self, do_write, basename):
@@ -42,6 +44,15 @@ class TrackWriter():
         hist_dict["meas_targ"] = base64.b64encode(pickle.dumps(meas_targ)).decode()
         hist_dict["meas_sensor"] = base64.b64encode(pickle.dumps(meas_sensor)).decode()
         
-        
         with open(f"{self._basename}/{track.track_id}.json", "w") as f:
             json.dump(hist_dict, f)
+
+
+    def write_conflict(self, conflict: Conflict) -> None:
+        conf_dict = conflict.save()
+        conf_dict["filter_type"] = "conflict"
+
+        name = conf_dict["name"]
+        
+        with open(f"{self._basename}/{name}.json", "w") as f:
+            json.dump(conf_dict, f)

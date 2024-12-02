@@ -67,7 +67,7 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
 
         filter_type = track_dict["filter_type"]
 
-        if filter_type == "LinearKalman":
+        if filter_type == "linear_kalman":
             filt_hist = LinearKalmanHistory(None)
             filt_hist.read(track_dict)
 

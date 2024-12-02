@@ -58,6 +58,9 @@ class Track():
     
     def __repr__(self) -> str:
         num_hits = len(self.meas_hist)
+        if num_hits < 2:
+            return f"Track {self.track_id}"
+        
         last_score = self.filter.history.score[-1]
         avg_score = sum(self.filter.history.score) / self.filter.history.num_updates
         pos_cov = self.filter.history.sig_pos[-1]
