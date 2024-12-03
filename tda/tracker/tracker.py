@@ -28,6 +28,8 @@ class Tracker():
 
         self.track_id_ctr = 1
 
+        self.recorder = TrackWriter(self.params.record_tracks, self.params.record_basename)
+
         if self.params.associator_type == "truth":
             self.associator = TruthAssociator()
         #elif self.params.associator_type == "pda":
@@ -54,12 +56,11 @@ class Tracker():
             self.deletor = MissBasedDeletor()
         elif self.params.deletor_type == "time":
             # todo add time param
-            self.deletor = TimeBasedDeletor(self.params.delete_time)
+            self.deletor = TimeBasedDeletor(self.params.delete_time, self.recorder)
         else:
             logging.error(f"Unknown deletor type: \"{self.params.deletor_type}\". Exiting.")
             sys.exit(-1)
 
-        self.recorder = TrackWriter(self.params.record_tracks, self.params.record_basename)
 
 
     def process_frame(self, frame: Sequence[Measurement]) -> None:

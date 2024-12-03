@@ -184,6 +184,14 @@ def get_opts():
 
 
 def main(opts):
+    logging.getLogger().setLevel("INFO")
+
+    imm_mu_0 = np.array([0.7, 0.2, 0.1])
+    
+    imm_Pi = np.array([[0.90, 0.08, 0.02],
+                       [0.30, 0.50, 0.20],
+                       [0.04, 0.16, 0.80]])
+
 
     tracker_params = TrackerParam(associator_type="truth",
                               initeator_type="truth",
@@ -191,11 +199,13 @@ def main(opts):
                               delete_time=60,
                               filter_nstate=0,
                               filter_startQ=np.array([1e4, 1e9, 1e9, 1e4, 1e9, 1e9, 1e4, 1e9, 1e9]),
-                              filter_n6_q=0.1,
-                              filter_n9_q=0.1,
-                              filter_turn_q=0.1,
+                              filter_n6_q=10,
+                              filter_n9_q=0,
+                              filter_turn_q=0,
+                              filter_imm_mu_0=imm_mu_0,
+                              filter_imm_Pi=imm_Pi,
                               record_tracks=True,
-                              record_basename="notebook/debug")
+                              record_basename="data/collision/output")
 
     tracker = Tracker(tracker_params)
     confdetect = ConflictDetector(gate_distance=5000, check_times=[10, 30, 60, 90, 120], prob_threshold=0.0005)
@@ -227,13 +237,16 @@ def main(opts):
         if not message:
             continue
 
+
         tracker.process_frame([message])
-        tracker.print_tracks()
+        #tracker.print_tracks()
 
         conflicts = confdetect.detect(tracker.tracks)
+        
+        logging.info(f"Frame Time: {message.time}, \ttracks: {len(tracker.tracks)},\t conflicts: {len(conflicts)}")
 
         for c in conflicts:
-            logging.info(c)
+            #logging.info(c)
             writer.write_conflict(c)
 
 

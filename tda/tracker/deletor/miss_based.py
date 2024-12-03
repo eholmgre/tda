@@ -6,7 +6,7 @@ from ..util.track_writer import TrackWriter
 
 
 class MissBasedDeletor(Deletor):
-    def delete_tracks(self, missed_tracks: List[Track], all_tracks: List[Track], frame_time: float, recorder:TrackWriter=None) -> None:
+    def delete_tracks(self, missed_tracks: List[Track], all_tracks: List[Track], frame_time: float) -> None:
 
         for t in missed_tracks:
             revisit = t.meas_hist[-1].sensor_revisit

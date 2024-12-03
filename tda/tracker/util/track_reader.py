@@ -13,6 +13,8 @@ from scipy.stats import chi2
 from tda.tracker.filters.history.linear_kalman_history import LinearKalmanHistory
 from tda.tracker.filters.history.imm_history import IMMHistory, LinearKalmanManauverHistory
 
+from tda.tracker.conflict import Conflict
+
 
 class TrackHist():
     def __init__(self, trk_id, meas_y, meas_R, meas_t, meas_targ, meas_sensor,
@@ -56,6 +58,13 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
     for t in track_files:
         with open(f"{basedir}/{t}") as f:
             track_dict = json.load(f)
+
+        if track_dict["filter_type"] == "conflict":
+            continue
+
+        if "type" in track_dict.keys():
+            if track_dict["type"] == "conflict":
+                continue
 
         name = track_dict["name"]
     
@@ -128,6 +137,30 @@ def read_tracks(basedir:str ) -> List[TrackHist]:
                                     state_mu=imm_hist.mu))
 
     return tracks
+
+
+def read_conflicts(basedir:str ) -> List[Conflict]:
+    conflict_files = [f for f in os.listdir(basedir) if f.split(".")[-1] == "json"]
+
+    conflicts: List[Conflict] = []
+
+    for t in conflict_files:
+        with open(f"{basedir}/{t}") as f:
+            track_dict = json.load(f)
+
+        if track_dict["filter_type"] != "conflict":
+            continue
+
+        if "type" in track_dict.keys():
+            if track_dict["type"] != "conflict":
+                continue
+
+        conf = Conflict(None, None, None, None, None, None, None, None, None, None)
+        conf.read(track_dict)
+
+        conflicts.append(conf)
+
+    return conflicts
 
 
 def plot_track(track, fig=None, axs=None,):

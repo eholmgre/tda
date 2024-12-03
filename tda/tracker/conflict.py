@@ -25,13 +25,20 @@ class Conflict():
         self.t2_grid = t2_grid
         self.result_grid = result_grid
 
+        if t1 and t2:
+            self.name = f"{t1.track_id}_{t2.track_id}_{time}"
+        else:
+            self.name = None
+
 
     def __repr__(self) -> str:
-        return f"Conflict: {self.track1.track_id} vs {self.track2.track_id}. Prob: {self.prob}. Time: {self.time}. Pos: {self.pos_lla}"
+        return f"Conflict: {self.name}. Prob: {self.prob}. Time: {self.time}. Pos: {self.pos_lla}"
 
 
     def save(self) -> Dict:
         hist_dict : Dict[str, Union[int, str]] = dict()
+
+        hist_dict["type"] = "conflict"
 
         hist_dict["name"] = f"{self.track1.track_id}_{self.track2.track_id}_{self.time}"
         hist_dict["track1"] = base64.b64encode(pickle.dumps(np.array(self.track1))).decode()
@@ -39,6 +46,7 @@ class Conflict():
         hist_dict["pos_ecef"] = base64.b64encode(pickle.dumps(np.array(self.pos_ecef))).decode()
         hist_dict["pos_lla"] = base64.b64encode(pickle.dumps(np.array(self.pos_lla))).decode()
         hist_dict["time"] = base64.b64encode(pickle.dumps(np.array(self.time))).decode()
+        hist_dict["prob"] = base64.b64encode(pickle.dumps(np.array(self.prob))).decode()
         hist_dict["grid"] = base64.b64encode(pickle.dumps(np.array(self.grid))).decode()
         hist_dict["t1_grid"] = base64.b64encode(pickle.dumps(np.array(self.t1_grid))).decode()
         hist_dict["t2_grid"] = base64.b64encode(pickle.dumps(np.array(self.t2_grid))).decode()
@@ -49,12 +57,12 @@ class Conflict():
 
     def read(self, hist_dict):
         self.name = hist_dict["name"]
-        self.track1 = pickle.loads(base64.b64decode(hist_dict["track1"]))
-        self.track2 = pickle.loads(base64.b64decode(hist_dict["track1"]))
+        #self.track1 = pickle.loads(base64.b64decode(hist_dict["track1"]))
+        #self.track2 = pickle.loads(base64.b64decode(hist_dict["track1"]))
         self.pos_ecef = pickle.loads(base64.b64decode(hist_dict["pos_ecef"]))
         self.pos_lla = pickle.loads(base64.b64decode(hist_dict["pos_lla"]))
         self.time = pickle.loads(base64.b64decode(hist_dict["time"]))
-
+        self.prob = pickle.loads(base64.b64decode(hist_dict["prob"]))
         self.grid = pickle.loads(base64.b64decode(hist_dict["grid"]))
         self.t1_grid = pickle.loads(base64.b64decode(hist_dict["t1_grid"]))
         self.t2_grid = pickle.loads(base64.b64decode(hist_dict["t2_grid"]))
