@@ -45,20 +45,22 @@ class ExtendedKalman(Filter):
         return self.h(x_pred)
     
 
-    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray]:
+    def _do_update(self, meas: Measurement) -> Tuple[NDArray, NDArray, float]:
         x_pred, P_pred = self.predict(meas.time)
         H = self.H(x_pred)
 
         inov = meas.y - self.h(x_pred)
         S = H @ P_pred @ H.T + self.R
-        K = P_pred @ H.T @ la.inv(S)
+        S_inv = la.inv(S)
+        nis = inov @ S_inv @ inov
+        K = P_pred @ H.T @ S_inv
         x_hat = x_pred + K @ inov
 
         # Joseph's Form cov update
         A = np.eye(self._num_states) - K @ H
         P = A @ P_pred @ A.T + K @ self.R @ K.T
 
-        return x_hat, P
+        return x_hat, P, nis
     
 
     def compute_gain(self, time: float) -> NDArray:

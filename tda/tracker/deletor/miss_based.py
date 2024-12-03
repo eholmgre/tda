@@ -2,6 +2,7 @@ from typing import List
 
 from .deletor import Deletor
 from ..track import Track
+from ..util.track_writer import TrackWriter
 
 
 class MissBasedDeletor(Deletor):

@@ -7,7 +7,7 @@ from typing import Callable, List, Sequence, Tuple
 from .associator import Associator
 from ..filters.filter import Filter
 from ..initeator.initieator import Initeator
-from ..initeator.truth import TruthIniteator
+from ..initeator.truth_initieator import TruthIniteator
 from ..track import Track
 from .truth import TruthAssociator
 from tda.common.measurement import Measurement
